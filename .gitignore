@@ -54,11 +54,14 @@ bin/*
 
 # executables
 tests/test_compile
+tests/test_unordered_multimap
 tests/test_m4ri
 tests/test_matrix
 tests/test_parser
 tests/test_permute
 tests/test_prange
+tests/test_dumer
+tests/test_collection
 tests/test_marc
 /.vs
 /vs2022/.vs/isdsolver
