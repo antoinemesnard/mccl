@@ -113,12 +113,13 @@ public:
         {
             for (auto it1 = begin; it1 != it2; ++it1)
             {
+                auto val12 = *it1 ^ *it2;
                 for (auto it3 = it2+1; it3 != end-1; ++it3)
                 {
-                    auto val = *it1 ^ *it2 ^ *it3;
+                    auto val123 = val12 ^ *it3;
                     for (auto it4 = it3+1; it4 != end; ++it4)
                     {
-                        if (!call_function(f, val ^ *it4))
+                        if (!call_function(f, val123 ^ *it4))
                             return;
                     }
                 }
@@ -130,12 +131,13 @@ public:
         {
             for (auto it3 = it2+1; it3 != end-1; ++it3)
             {
+                auto val23 = *it2 ^ *it3;
                 for (auto it4 = it3+1; it4 != end; ++it4)
                 {
-                    auto val = *it4 ^ *it2 ^ *it3;
+                    auto val234 = val23 ^*it4;
                     for (auto it1 = begin; it1 != it2; ++it1)
                     {
-                        if (!call_function(f, val ^ *it1))
+                        if (!call_function(f, val234 ^ *it1))
                             return;
                     }
                 }
@@ -254,14 +256,15 @@ public:
             idx[0] = 0;
             for (auto it1 = begin; it1 != it2; ++it1,++idx[0])
             {
+                auto val12 = *it1 ^ *it2;
                 idx[2] = idx[1]+1;
                 for (auto it3 = it2+1; it3 != end-1; ++it3,++idx[2])
                 {
-                    auto val = *it1 ^ *it2 ^ *it3;
+                    auto val123 = val12 ^ *it3;
                     idx[3] = idx[2]+1;
                     for (auto it4 = it3+1; it4 != end; ++it4,++idx[3])
                     {
-                        if (!call_function(f, idx+0, idx+4, val ^ *it4))
+                        if (!call_function(f, idx+0, idx+4, val123 ^ *it4))
                             return;
                     }
                 }
@@ -274,14 +277,15 @@ public:
             idx[2] = idx[1]+1;
             for (auto it3 = it2+1; it3 != end-1; ++it3,++idx[2])
             {
+                auto val23 = *it2 ^ *it3;
                 idx[3] = idx[2]+1;
                 for (auto it4 = it3+1; it4 != end; ++it4,++idx[3])
                 {
-                    auto val = *it4 ^ *it2 ^ *it3;
+                    auto val234 = val23 ^ *it4;
                     idx[0] = 0;
                     for (auto it1 = begin; it1 != it2; ++it1,++idx[0])
                     {
-                        if (!call_function(f, idx+0, idx+4, val ^ *it1))
+                        if (!call_function(f, idx+0, idx+4, val234 ^ *it1))
                             return;
                     }
                 }
