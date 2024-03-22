@@ -193,29 +193,27 @@ vector Sub_ISD_Dumer(matrix H2, vector s2, int p, int ell, int w2max, vector (..
 - filtering to avoid multiple representations
 
 ```cpp
-vector Sub_ISD_MMT(matrix H2, vector s2, int p, int ell, int r1, int w2max, vector (...) callback):
+vector Sub_ISD_MMT(matrix H2, vector s2, int p, int ell, int r1, int A, int w2max, vector (...) callback):
   // We suppose that s2 and H2 are of length 64.
 
   // initiate lists
   List[(vector,List(int))] Li;
 
-  // random target vectors
-  vector  t = random_vector(64);
-
-  int p1 = p//2;
+  int p1 = p/2;
   int p2 = p - p1;
 
   L21, L22 = build_LR_lists(H2,p1);
-  L11 = merge_lists(L21,L22,t,r1,p1);
-
   L23, L24 = build_LR_lists(H2,p2);
-  L12 = merge_lists(L23,L24,t+s2,r1,p2);
 
-  L0  = merge_lists(L11,L12,s,l,p);
+  for t in T: // T = some set of A distincts integers in [|0, 2 ** r1 - 1|]
+    L11 = merge_lists(L21,L22,t,r1,p1);
+    L12 = merge_lists(L23,L24,t+s2,r1,p2);
 
-  for (v,e) in L0:
-    if (v[l:]).weight() <= w2max: // pre-filtering
-      callback((vector_reverse(v),e),w2)
+    L0  = merge_lists(L11,L12,s,l,p);
+
+    for (v,e) in L0:
+      if (v[l:]).weight() <= w2max: // pre-filtering
+        callback((vector_reverse(v),e),w2)
 ```
 
 ### BJMM
