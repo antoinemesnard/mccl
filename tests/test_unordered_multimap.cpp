@@ -65,7 +65,7 @@ struct ht_wrapper
     {
         auto it = _map.find(k);
         if (it != _map.end())
-            f(it->second);
+            f(it->first, it->second);
     }
 };
 
@@ -73,7 +73,7 @@ struct counter_t
 {
     uint64_t c;
     counter_t(): c(0) {}
-    void operator()(uint64_t v) { c += v; }
+    void operator()(uint64_t, uint64_t v) { c += v; }
     void operator()(uintptr_t, uint64_t, uint64_t v) { c += v; }
 };
 

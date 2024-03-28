@@ -218,7 +218,7 @@ struct default_unordered_multimap_traits
 //  will search starting at bucket(k) to find elements with that key
 //   - for each matching key (may be more than 1) with value v it will call f(v)
 //   - at the first empty position it aborts the search
-template<typename Key = uint64_t, typename Value = uint64_t, typename Traits = default_unordered_multimap_traits>
+template<typename Key = uint64_t, typename Value = uint64_t, bool usekeymask = false, typename Traits = default_unordered_multimap_traits>
 class cacheline_unordered_multimap
 {
 public:
@@ -348,6 +348,13 @@ public:
             memset(&_map[0], 0, sizeof(bucket_t)*_hp.prime());
     }
 
+    // define keymask
+    void define_keymask(size_t keybits)
+    {
+        if (usekeymask)
+            _keymask = key_type((size_t(1) << keybits) - 1);
+    }
+
     // compute uint64_t hash of key
     uint64_t hash(const key_type& k) const
     {
@@ -357,7 +364,9 @@ public:
     // compute bucket from key via hash
     uint64_t bucket(const key_type& k) const
     {
-        return _hp.mod( this->hash(k) );
+        if (!usekeymask)
+            return _hp.mod( this->hash(k) );
+        return _hp.mod( this->hash(k & _keymask));
     }
 
     // prefetch target bucket to speed up operations
@@ -365,6 +374,14 @@ public:
     {
         uint64_t h = bucket(k);
         __builtin_prefetch(&_map[h].size,1,0);
+    }
+
+    // compare two keys
+    bool key_cmp(const key_type& k1, const key_type& k2) const
+    {
+        if (!usekeymask)
+            return k1 == k2;
+        return (k1 & _keymask) == (k2 & _keymask);
     }
     
     bool insert(const key_type& k, const value_type& v)
@@ -426,8 +443,8 @@ public:
             if (B.size < bucket_size)
             {
                 for (size_t j = 0; j < B.size; ++j)
-                    if (B.keys[j] == k)
-                        if (!call_function(f, B.values[j]))
+                    if (key_cmp(B.keys[j], k))
+                        if (!call_function(f, B.keys[j], B.values[j]))
                             return;
                 return;
             }
@@ -435,8 +452,8 @@ public:
             {
                 __builtin_prefetch(&_map[b+1].size,0,0);
                 for (size_t j = 0; j < bucket_size; ++j)
-                    if (B.keys[j] == k)
-                        if (!call_function(f, B.values[j]))
+                    if (key_cmp(B.keys[j], k))
+                        if (!call_function(f, B.keys[j], B.values[j]))
                             return;
             }
             // increase b mod p
@@ -451,6 +468,8 @@ private:
     hash_prime _hp;
 
     aligned_vector<bucket_t> _map;
+
+    key_type _keymask;
 };
 
 
@@ -464,7 +483,7 @@ private:
 //   - finalize_insert / finalize_match: process all elements in the queue and clear the queue
 // - !! do not forget to call finalize_insert / finalize_match at the end of the insert / match phase
 
-template<typename Key = uint64_t, typename Value = uint64_t, typename traits = default_unordered_multimap_traits>
+template<typename Key = uint64_t, typename Value = uint64_t, bool usekeymask = false, typename traits = default_unordered_multimap_traits>
 class batch_unordered_multimap
 {
 public:
@@ -632,6 +651,13 @@ public:
         _match_queue_count = 0;
     }
 
+    // define keymask
+    void define_keymask(size_t keybits)
+    {
+        if (usekeymask)
+            _keymask = key_type((size_t(1) << keybits) - 1);
+    }
+
     // compute uint64_t hash of key
     uint64_t hash(const key_type& k) const
     {
@@ -641,9 +667,18 @@ public:
     // compute bucket from key via hash
     uint64_t bucket(const key_type& k) const
     {
-        return _hp.mod( this->hash(k) );
+        if (!usekeymask)
+            return _hp.mod( this->hash(k) );
+        return _hp.mod( this->hash(k & _keymask));
     }
 
+    // compare two keys
+    bool key_cmp(const key_type& k1, const key_type& k2) const
+    {
+        if (!usekeymask)
+            return k1 == k2;
+        return (k1 & _keymask) == (k2 & _keymask);
+    }
 
     void insert(const key_type& k, const value_type& v)
     {
@@ -768,16 +803,16 @@ public:
                 {
                     for (size_t i = 0; i < B.size; ++i)
                     {
-                        if (B.keys[i] == item.key)
-                            if (!call_function(f, item.aux_data, item.key, B.values[i]))
+                        if (key_cmp(B.keys[i], item.key))
+                            if (!call_function(f, item.aux_data, B.keys[i], B.values[i]))
                                 return false;
                     }
                 } else
                 {
                     for (size_t i = 0; i < bucket_size; ++i)
                     {
-                        if (B.keys[i] == item.key)
-                            if (!call_function(f, item.aux_data, item.key, B.values[i]))
+                        if (key_cmp(B.keys[i], item.key))
+                            if (!call_function(f, item.aux_data, B.keys[i], B.values[i]))
                                 return false;
                     }
                     if (++b == _hp.prime())
@@ -823,6 +858,8 @@ private:
     };
     aligned_vector<match_item_t> _match_queue;
     size_t _match_queue_count;
+
+    key_type _keymask;
 };
 
 MCCL_END_NAMESPACE

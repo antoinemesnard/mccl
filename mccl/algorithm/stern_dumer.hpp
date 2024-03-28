@@ -172,7 +172,7 @@ public:
                     for (auto it2 = idxbegin; it2 != idxend; ++it2,++it)
                         *it = *it2 + rows2;
                     hashmap.match(val,
-                        [this, it, &state](const uint64_t packed_indices)
+                        [this, it, &state](const uint64_t, const uint64_t packed_indices)
                         {
                             auto it2 = unpack_indices(packed_indices, it);
 
