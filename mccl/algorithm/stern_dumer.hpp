@@ -8,8 +8,6 @@
 #include <mccl/tools/bitfield.hpp>
 #include <mccl/tools/enumerate.hpp>
 
-#include <unordered_map>
-
 MCCL_BEGIN_NAMESPACE
 
 struct stern_dumer_config_t
@@ -160,32 +158,31 @@ public:
             {
                 val ^= Sval;
                 if (bitfield.stage2(val))
-                    hashmap.emplace(val, pack_indices(idxbegin,idxend) );
+                    hashmap.insert(val, pack_indices(idxbegin,idxend) );
             });
         // stage 3: retrieve matches from left-table and process
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p1,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val)
             {
+                bool state = true;
                 if (bitfield.stage3(val))
                 {
                     uint32_t* it = idx+0;
                     // note that left-table indices are offset rows2 in firstwords
                     for (auto it2 = idxbegin; it2 != idxend; ++it2,++it)
                         *it = *it2 + rows2;
-                    auto range = hashmap.equal_range(val);
-                    for (auto valit = range.first; valit != range.second; ++valit)
-                    {
-                        if (valit->first != val)
-                            throw;
-                        uint64_t packed_indices = valit->second;
-                        auto it2 = unpack_indices(packed_indices, it);
+                    hashmap.match(val,
+                        [this, it, &state](const uint64_t packed_indices)
+                        {
+                            auto it2 = unpack_indices(packed_indices, it);
 
-                        MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                        if (!(*callback)(ptr, idx+0, it2, 0))
-                            return false;
-                    }
+                            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
+                            if (!(*callback)(ptr, idx+0, it2, 0))
+                                state = false;
+                            return state;
+                        });
                 }
-                return true;
+                return state;
             });
         return false;
     }
@@ -226,7 +223,7 @@ private:
     unsigned int wmax;
     
     staged_bitfield<false,false> bitfield;
-    std::unordered_multimap<uint64_t, uint64_t> hashmap;
+    cacheline_unordered_multimap<uint64_t, uint64_t> hashmap;
     
     enumerate_t<uint32_t> enumerate;
     uint32_t idx[16];
