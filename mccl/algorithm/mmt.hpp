@@ -218,9 +218,21 @@ public:
                                     [this, it2, &state](const uint64_t, const pair_uint64_t packed_indices2)
                                     {
                                         auto it3 = unpack_indices(packed_indices2.first, it2);
-                                        for (auto it22 = it2; it22 != it3; ++it22)
-                                            *it22 += rows2;
+                                        for (auto ita = it2; ita != it3; ++ita)
+                                            *ita += rows2;
                                         auto it4 = unpack_indices(packed_indices2.second, it3);
+
+                                        for (auto ita = idx+0; ita != it2; ++ita)
+                                            for (auto itb = it2; itb != it4; ++itb)
+                                            {
+                                                if (*ita == *itb)
+                                                {
+                                                    for (auto itc = itb, itd = itb + 1; itd != it4; ++itc, ++itd)
+                                                        *itc = *itd;
+                                                    --it4;
+                                                    break;
+                                                }
+                                            }
 
                                         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
                                         if (!(*callback)(ptr, idx+0, it4, 0))
