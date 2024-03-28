@@ -397,9 +397,26 @@ public:
             return true;
         }
     }
+
+    // if return type of f is void always return true (continue matching)
+    template<typename F, typename ... Args>
+    inline auto call_function(F&& f, Args&& ... args)
+        -> typename std::enable_if<std::is_same<void,decltype(f(std::forward<Args>(args)...))>::value, bool>::type
+    {
+        f(std::forward<Args>(args)...);
+        return true;
+    }
+
+    // if return type of f is bool return output of f (true to continue matching, false to stop)
+    template<typename F, typename ... Args>
+    inline auto call_function(F&& f, Args&& ... args)
+        -> typename std::enable_if<std::is_same<bool,decltype(f(std::forward<Args>(args)...))>::value, bool>::type
+    {
+        return f(std::forward<Args>(args)...);
+    }
     
     template<typename F>
-    void match(const key_type& k, F&& f) const
+    void match(const key_type& k, F&& f)
     {
         // compute intial bucket index to start search
         uint64_t b = bucket(k);
@@ -410,7 +427,8 @@ public:
             {
                 for (size_t j = 0; j < B.size; ++j)
                     if (B.keys[j] == k)
-                        f(B.values[j]);
+                        if (!call_function(f, B.values[j]))
+                            return;
                 return;
             }
             else
@@ -418,7 +436,8 @@ public:
                 __builtin_prefetch(&_map[b+1].size,0,0);
                 for (size_t j = 0; j < bucket_size; ++j)
                     if (B.keys[j] == k)
-                        f(B.values[j]);
+                        if (!call_function(f, B.values[j]))
+                            return;
             }
             // increase b mod p
             if (++b == _hp.prime())
@@ -697,6 +716,22 @@ public:
             ;
     }
 
+    // if return type of f is void always return true (continue matching)
+    template<typename FF, typename ... Args>
+    inline auto call_function(FF&& f, Args&& ... args)
+        -> typename std::enable_if<std::is_same<void,decltype(f(std::forward<Args>(args)...))>::value, bool>::type
+    {
+        f(std::forward<Args>(args)...);
+        return true;
+    }
+
+    // if return type of f is bool return output of f (true to continue matching, false to stop)
+    template<typename FF, typename ... Args>
+    inline auto call_function(FF&& f, Args&& ... args)
+        -> typename std::enable_if<std::is_same<bool,decltype(f(std::forward<Args>(args)...))>::value, bool>::type
+    {
+        return f(std::forward<Args>(args)...);
+    }
 
     template<typename FF>
     void queue_match(const key_type& k, uintptr_t aux_data, FF&& f)
@@ -734,14 +769,16 @@ public:
                     for (size_t i = 0; i < B.size; ++i)
                     {
                         if (B.keys[i] == item.key)
-                            f(item.aux_data, item.key, B.values[i]);
+                            if (!call_function(f, item.aux_data, item.key, B.values[i]))
+                                return false;
                     }
                 } else
                 {
                     for (size_t i = 0; i < bucket_size; ++i)
                     {
                         if (B.keys[i] == item.key)
-                            f(item.aux_data, item.key, B.values[i]);
+                            if (!call_function(f, item.aux_data, item.key, B.values[i]))
+                                return false;
                     }
                     if (++b == _hp.prime())
                         b = 0;
