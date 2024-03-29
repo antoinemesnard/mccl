@@ -61,6 +61,7 @@ tests/test_parser
 tests/test_permute
 tests/test_prange
 tests/test_dumer
+tests/test_mmt
 tests/test_collection
 tests/test_marc
 /.vs
