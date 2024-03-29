@@ -106,7 +106,8 @@ public:
         bitfield2.resize(l2);
         bitfield.resize(columns);
 
-        hashmap12.define_keymask(l2);
+        hashmap1.define_keymask(l2);
+        hashmap2.define_keymask(l2);
 
         // TODO: compute reasonable reserve sizes
         // hashmap12.reserve(...);
@@ -137,7 +138,8 @@ public:
         bitfield2.clear();
         bitfield.clear();
         
-        hashmap12.clear();
+        hashmap1.clear();
+        hashmap2.clear();
         hashmap.clear();
     }
 
@@ -162,7 +164,14 @@ public:
                 bool b1 = bitfield1.stage2(val);
                 bool b2 = bitfield2.stage2(val);
                 if (b1 || b2)
-                    hashmap12.insert(val, pack_indices(idxbegin, idxend));
+                {
+                    uint64_t packed_indices = pack_indices(idxbegin, idxend);
+                    if (b1)
+                        hashmap1.insert(val, packed_indices);
+                    if (b2)
+                        hashmap2.insert(val, packed_indices);
+                }
+
             });
         
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
@@ -170,7 +179,7 @@ public:
             {
                 if (bitfield1.stage3(val1))
                 {
-                    hashmap12.match(val1,
+                    hashmap1.match(val1,
                         [this, val1](const uint64_t val2, const uint64_t)
                         {
                             bitfield.stage1(val1 ^ val2);
@@ -185,7 +194,7 @@ public:
                 if (bitfield2.stage3(val1))
                 {
                     uint64_t packed_indices1 = pack_indices(idxbegin, idxend);
-                    hashmap12.match(val1,
+                    hashmap2.match(val1,
                         [this, val1, packed_indices1](const uint64_t val2, const uint64_t packed_indices2)
                         {
                             uint64_t val = val1 ^ val2;
@@ -207,7 +216,7 @@ public:
                     uint32_t* it = idx+0;
                     for (auto it2 = idxbegin; it2 != idxend; ++it2, ++it)
                         *it = *it2 + rows2;
-                    hashmap12.match(val11,
+                    hashmap1.match(val11,
                         [this, val11, it, &state](const uint64_t val12, const uint64_t packed_indices12)
                         {
                             uint64_t val1 = val11 ^ val12;
@@ -293,7 +302,8 @@ private:
         uint64_t second;
     } pair_uint64_t ;
 
-    cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap12;
+    cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap1;
+    cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap2;
     cacheline_unordered_multimap<uint64_t, pair_uint64_t> hashmap;
 
     enumerate_t<uint32_t> enumerate;
