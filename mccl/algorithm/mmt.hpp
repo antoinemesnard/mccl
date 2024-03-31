@@ -75,8 +75,8 @@ public:
     // API member function
     void initialize(const cmat_view& _H12T, size_t _H2Tcolumns, const cvec_view& _S, unsigned int w, callback_t _callback, void* _ptr) final
     {
-        if (stats.cnt_initialize._counter != 0)
-            stats.refresh();
+        /* if (stats.cnt_initialize._counter != 0)
+            stats.refresh(); */
         stats.cnt_initialize.inc();
 
         // copy initialization parameters
@@ -121,6 +121,7 @@ public:
         prepare_loop();
         while (loop_next())
             ;
+        stats.refresh();
     }
 
     //API member function
