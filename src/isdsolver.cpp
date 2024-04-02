@@ -7,6 +7,7 @@
 #include <mccl/algorithm/lee_brickell.hpp>
 #include <mccl/algorithm/stern_dumer.hpp>
 #include <mccl/algorithm/mmt.hpp>
+#include <mccl/algorithm/mmt_lm.hpp>
 
 #include <mccl/tools/parser.hpp>
 #include <mccl/tools/generator.hpp>
@@ -147,7 +148,7 @@ try
       ;
     // these are other configuration options
     auxopts.add_options()
-      ("algo,a", po::value<std::string>(&algo)->default_value("P"), "Specify algorithm: P, LB, SDv0, MMTv0")
+      ("algo,a", po::value<std::string>(&algo)->default_value("P"), "Specify algorithm: P, LB, SDv0, MMTv0; MMTLMv0")
       ("trials,t", po::value<size_t>(&trials)->default_value(1), "Number of ISD trials")
       ("quiet,q", po::bool_switch(&quiet), "Quiet: reduce verbosity of trials")
       ("printinput", po::bool_switch(&print_input), "Print input H & S")
@@ -176,6 +177,7 @@ try
     modules.emplace_back( make_module_configuration( lee_brickell_config_default ) );
     modules.emplace_back( make_module_configuration( stern_dumer_config_default ) );
     modules.emplace_back( make_module_configuration( mmt_config_default ) );
+    modules.emplace_back( make_module_configuration( mmt_lm_config_default ) );
     // =================================================================
     
     //  if there are common options then only the first description is used
@@ -278,6 +280,11 @@ try
     {
       algo = "MMT v0";
       INITIALIZE_ALGO( subISDT_mmt );
+    }
+    else if (algo == "MMTLMV0")
+    {
+      algo = "MMT low memory v0";
+      INITIALIZE_ALGO( subISDT_mmt_lm );
     }
     else
     {
