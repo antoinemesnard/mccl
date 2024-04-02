@@ -75,8 +75,6 @@ public:
     // API member function
     void initialize(const cmat_view& _H12T, size_t _H2Tcolumns, const cvec_view& _S, unsigned int w, callback_t _callback, void* _ptr) final
     {
-        /* if (stats.cnt_initialize._counter != 0)
-            stats.refresh(); */
         stats.cnt_initialize.inc();
 
         // copy initialization parameters
@@ -225,27 +223,45 @@ public:
                             {
                                 auto it2 = unpack_indices(packed_indices12, it);
                                 hashmap.match(val1,
-                                    [this, it2, &state](const uint64_t, const pair_uint64_t packed_indices2)
+                                    [this, it, it2, &state](const uint64_t, const pair_uint64_t packed_indices2)
                                     {
                                         auto it3 = unpack_indices(packed_indices2.first, it2);
                                         for (auto ita = it2; ita != it3; ++ita)
                                             *ita += rows2;
                                         auto it4 = unpack_indices(packed_indices2.second, it3);
 
-                                        for (auto ita = idx+0; ita != it2; ++ita)
-                                            for (auto itb = it2; itb != it4; ++itb)
-                                            {
-                                                if (*ita == *itb)
-                                                {
-                                                    for (auto itc = itb, itd = itb + 1; itd != it4; ++itc, ++itd)
-                                                        *itc = *itd;
-                                                    --it4;
-                                                    break;
-                                                }
-                                            }
+                                        auto it5 = it4;
+                                        auto ita = it - 1, itb = it2;
+                                        while (ita >= idx+0 && itb < it3)
+                                        {   if (*ita == *itb)
+                                            { --ita; ++itb; }
+                                            else
+                                            {   if (*ita > *itb)
+                                                { *it5 = *ita; --ita; }
+                                                else
+                                                { *it5 = *itb; ++itb; }
+                                                ++it5; } }
+                                        while (ita >= idx+0)
+                                        { *it5 = *ita; --ita; ++it5; }
+                                        while (itb < it3)
+                                        { *it5 = *itb; ++itb; ++it5; }
+                                        ita = it; itb = it3;
+                                        while (ita < it2 && itb < it4)
+                                        {   if (*ita == *itb)
+                                            { ++ita; ++itb; }
+                                            else
+                                            {   if (*ita > *itb)
+                                                { *it5 = *ita; ++ita; }
+                                                else
+                                                { *it5 = *itb; ++itb; }
+                                                ++it5; } }
+                                        while (ita < it2)
+                                        { *it5 = *ita; ++ita; ++it5; }
+                                        while (itb < it4)
+                                        { *it5 = *itb; ++itb; ++it5; }
 
                                         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                                        if (!(*callback)(ptr, idx+0, it4, 0))
+                                        if (!(*callback)(ptr, it4, it5, 0))
                                             state = false;
                                         return state;
                                     });
@@ -308,7 +324,7 @@ private:
     cacheline_unordered_multimap<uint64_t, pair_uint64_t> hashmap;
 
     enumerate_t<uint32_t> enumerate;
-    uint32_t idx[16];
+    uint32_t idx[32];
 
     std::vector<uint64_t> firstwords;
     uint64_t firstwordmask, padmask, Sval;
