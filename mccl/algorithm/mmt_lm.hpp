@@ -13,7 +13,7 @@ MCCL_BEGIN_NAMESPACE
 struct mmt_lm_config_t
 {
     const std::string modulename = "mmt_lm";
-    const std::string description = "MMT_LM configuration";
+    const std::string description = "MMT low memory configuration";
     const std::string manualstring =
         "MMT_LM:\n"
         "\tParameters: p, l2, A"
