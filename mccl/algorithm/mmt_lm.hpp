@@ -159,7 +159,7 @@ public:
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](uint64_t val1)
             {
-                hashmap12.match(val1,
+                hashmap12.match(val1 ^ a,
                      [this, val1](const uint64_t val2, const uint64_t)
                      {
                         bitfield.stage1(val1 ^ val2);
@@ -171,7 +171,7 @@ public:
             {
                 val1 ^= Sval;
                 uint64_t packed_indices1 = pack_indices(idxbegin, idxend);
-                hashmap12.match(val1,
+                hashmap12.match(val1 ^ a,
                     [this, val1, packed_indices1](const uint64_t val2, const uint64_t packed_indices2)
                     {
                         uint64_t val = val1 ^ val2;
@@ -189,7 +189,7 @@ public:
                 uint32_t* it = idx+0;
                 for (auto it2 = idxbegin; it2 != idxend; ++it2, ++it)
                     *it = *it2 + rows2;
-                hashmap12.match(val11,
+                hashmap12.match(val11 ^ a,
                     [this, val11, it](const uint64_t val12, const uint64_t packed_indices12)
                     {
                         uint64_t val1 = val11 ^ val12;
