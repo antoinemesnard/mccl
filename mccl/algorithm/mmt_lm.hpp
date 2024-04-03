@@ -61,7 +61,7 @@ public:
     }
 
     subISDT_mmt_lm()
-        : config(mmt_lm_config_default), stats("MMT_LM")
+        : config(mmt_lm_config_default), stats("MMT-LM")
     {
     }
 
@@ -102,10 +102,11 @@ public:
 
         firstwordmask = detail::lastwordmask(columns);
         padmask = ~firstwordmask;
+        syndmask = detail::lastwordmask(l2);
 
         bitfield.resize(columns);
 
-        hashmap12.define_keymask(l2);
+        hashmap12.define_keymask(syndmask);
 
         // TODO: compute reasonable reserve sizes
         // hashmap12.reserve(...);
@@ -299,7 +300,7 @@ private:
     uint32_t idx[32];
 
     std::vector<uint64_t> firstwords;
-    uint64_t firstwordmask, padmask, Sval;
+    uint64_t firstwordmask, padmask, syndmask, Sval;
 
     uint64_t a;
     bool state;

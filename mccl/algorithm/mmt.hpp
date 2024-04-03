@@ -99,13 +99,14 @@ public:
 
         firstwordmask = detail::lastwordmask(columns);
         padmask = ~firstwordmask;
+        syndmask = detail::lastwordmask(l2);
 
         bitfield1.resize(l2);
         bitfield2.resize(l2);
         bitfield.resize(columns);
 
-        hashmap1.define_keymask(l2);
-        hashmap2.define_keymask(l2);
+        hashmap1.define_keymask(syndmask);
+        hashmap2.define_keymask(syndmask);
 
         // TODO: compute reasonable reserve sizes
         // hashmap12.reserve(...);
@@ -327,7 +328,7 @@ private:
     uint32_t idx[32];
 
     std::vector<uint64_t> firstwords;
-    uint64_t firstwordmask, padmask, Sval;
+    uint64_t firstwordmask, padmask, syndmask, Sval;
 
     size_t p, p1, p2, p11, p12, rows, rows1, rows2, l2;
 

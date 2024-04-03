@@ -327,6 +327,7 @@ public:
             return false;
         // create temporary multimap with same parameters
         cacheline_unordered_multimap tmp(_max_load_factor, _grow_factor);
+        tmp.define_keymask(_keymask);
         // reserve target number of buckets
         tmp._reserve(buckets);
         // and insert all elements
@@ -349,10 +350,10 @@ public:
     }
 
     // define keymask
-    void define_keymask(size_t keybits)
+    void define_keymask(key_type __keymask)
     {
         if (usekeymask)
-            _keymask = key_type((size_t(1) << keybits) - 1);
+            _keymask = __keymask;
     }
 
     // compute uint64_t hash of key
@@ -620,6 +621,7 @@ public:
         finalize_insert();
         // create temporary multimap with same parameters
         batch_unordered_multimap tmp(_max_load_factor, _grow_factor, _insert_batch_size, _match_batch_size);
+        tmp.define_keymask(_keymask);
         // reserve given number of buckets
         tmp._reserve(buckets);
         // move match queue to tmp to ensure it remains intact at the end
@@ -652,10 +654,10 @@ public:
     }
 
     // define keymask
-    void define_keymask(size_t keybits)
+    void define_keymask(key_type __keymask)
     {
         if (usekeymask)
-            _keymask = key_type((size_t(1) << keybits) - 1);
+            _keymask = __keymask;
     }
 
     // compute uint64_t hash of key
