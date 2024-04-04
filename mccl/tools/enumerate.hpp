@@ -153,15 +153,16 @@ public:
             default: throw std::runtime_error("enumerate::enumerate_val: only 1 <= p <= 4 supported");
             case 4:
                 enumerate4_val(begin,end,f);
-                MCCL_FALLTHROUGH;
+                return;
             case 3:
                 enumerate3_val(begin,end,f);
-                MCCL_FALLTHROUGH;
+                return;
             case 2:
-                enumerate12_val(begin,end,f);
+                enumerate2_val(begin,end,f);
                 return;
             case 1:
                 enumerate1_val(begin,end,f);
+                return;
         }
     }
 
@@ -301,12 +302,12 @@ public:
             default: throw std::runtime_error("enumerate::enumerate: only 1 <= p <= 4 supported");
             case 4:
                 enumerate4(begin,end,f);
-                MCCL_FALLTHROUGH;
+                return;
             case 3:
                 enumerate3(begin,end,f);
-                MCCL_FALLTHROUGH;
+                return;
             case 2:
-                enumerate12(begin,end,f);
+                enumerate2(begin,end,f);
                 return;
             case 1:
                 enumerate1(begin,end,f);
