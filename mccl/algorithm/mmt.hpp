@@ -91,6 +91,7 @@ public:
         // set attack parameters
         p1 = p/2; p2 = p - p1;
         p11 = p/4; p12 = p1 - p11;
+        l1 = columns - l2;
         rows = H12T.rows();
         rows1 = rows/2; rows2 = rows - rows1;
 
@@ -103,7 +104,7 @@ public:
 
         bitfield1.resize(l2);
         bitfield2.resize(l2);
-        bitfield.resize(columns);
+        bitfield.resize(l1);
 
         hashmap1.define_keymask(syndmask);
         hashmap2.define_keymask(syndmask);
@@ -183,7 +184,7 @@ public:
                     hashmap1.match(val1,
                         [this, val1](const uint64_t val2, const uint64_t)
                         {
-                            bitfield.stage1(val1 ^ val2);
+                            bitfield.stage1((val1 ^ val2)>>l2);
                         });
                 }
             });
@@ -199,7 +200,7 @@ public:
                         [this, val1, packed_indices1](const uint64_t val2, const uint64_t packed_indices2)
                         {
                             uint64_t val = val1 ^ val2;
-                            if (bitfield.stage2(val))
+                            if (bitfield.stage2(val>>l2))
                             {
                                 pair_uint64_t packed_indices = {packed_indices1, packed_indices2};
                                 hashmap.insert(val, packed_indices);
@@ -221,7 +222,7 @@ public:
                         [this, val11, it, &state](const uint64_t val12, const uint64_t packed_indices12)
                         {
                             uint64_t val1 = val11 ^ val12;
-                            if (bitfield.stage3(val1))
+                            if (bitfield.stage3(val1>>l2))
                             {
                                 auto it2 = unpack_indices(packed_indices12, it);
                                 hashmap.match(val1,
@@ -333,7 +334,7 @@ private:
     std::vector<uint64_t> firstwords;
     uint64_t firstwordmask, padmask, syndmask, Sval;
 
-    size_t p, p1, p2, p11, p12, rows, rows1, rows2, l2;
+    size_t p, p1, p2, p11, p12, rows, rows1, rows2, l1, l2;
 
     mmt_config_t config;
     decoding_statistics stats;
