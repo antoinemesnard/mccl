@@ -107,6 +107,7 @@ public:
 
         hashmap1.define_keymask(syndmask);
         hashmap2.define_keymask(syndmask);
+        hashmap.define_keymask(firstwordmask);
 
         // TODO: compute reasonable reserve sizes
         // hashmap12.reserve(...);
@@ -131,8 +132,8 @@ public:
 
         firstwords.resize(rows);
         for (unsigned i = 0; i < rows; ++i)
-            firstwords[i] = (*H12T.word_ptr(i)) & firstwordmask;
-        Sval = (*S.word_ptr()) & firstwordmask;
+            firstwords[i] = (*H12T.word_ptr(i));
+        Sval = (*S.word_ptr());
 
         bitfield1.clear();
         bitfield2.clear();
@@ -224,7 +225,7 @@ public:
                             {
                                 auto it2 = unpack_indices(packed_indices12, it);
                                 hashmap.match(val1,
-                                    [this, it, it2, &state](const uint64_t, const pair_uint64_t packed_indices2)
+                                    [this, val1, it, it2, &state](const uint64_t val2, const pair_uint64_t packed_indices2)
                                     {
                                         auto it3 = unpack_indices(packed_indices2.first, it2);
                                         for (auto ita = it2; ita != it3; ++ita)
@@ -261,8 +262,10 @@ public:
                                         while (itb < it4)
                                         { *it5 = *itb; ++itb; ++it5; }
 
+                                        unsigned int w = hammingweight((val1 ^ val2) & padmask);
+
                                         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                                        if (!(*callback)(ptr, it4, it5, 0))
+                                        if (!(*callback)(ptr, it4, it5, w))
                                             state = false;
                                         return state;
                                     });
@@ -322,7 +325,7 @@ private:
 
     cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap1;
     cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap2;
-    cacheline_unordered_multimap<uint64_t, pair_uint64_t> hashmap;
+    cacheline_unordered_multimap<uint64_t, pair_uint64_t, true> hashmap;
 
     enumerate_t<uint32_t> enumerate;
     uint32_t idx[32];
