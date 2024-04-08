@@ -259,7 +259,7 @@ public:
     bool   empty()             const { return _size == 0; }
     size_t size()              const { return _size; }
     size_t capacity()          const { return _max_size; }
-    size_t bucket_count()      const { return _reserved_size; }
+    size_t bucket_count()      const { return _hp.prime(); }
     float  load_factor()       const { return float(_size) / float(_reserved_size); }
     float  max_load_factor()   const { return _max_load_factor; }
     float  grow_factor()       const { return _grow_factor; }
@@ -273,7 +273,7 @@ public:
         _max_size = float(_hp.prime()) * float(bucket_size) * _max_load_factor;
         // changing _max_size may trigger a rehash (if autogrow is enabled)
         if (is_auto_grow && _size > _max_size)
-            rehash( _grow_factor * std::max<float>( float(_reserved_size) , float(_size)/_max_load_factor ) );
+            rehash( _grow_factor * std::max<float>( float(_reserved_size) , float(_size)/_max_load_factor ) / float(bucket_size) );
     }
     
     // set new grow factor
@@ -323,7 +323,7 @@ public:
             return true;
         }
         // cannot shrink number of buckets if this violates max_load_factor
-        if (float(buckets)*_max_load_factor <= float(_size))
+        if (float(buckets) * float(bucket_size) * _max_load_factor <= float(_size))
             return false;
         // create temporary multimap with same parameters
         cacheline_unordered_multimap tmp(_max_load_factor, _grow_factor);
@@ -391,7 +391,7 @@ public:
         {
             if (!is_auto_grow)
                 return false;
-            rehash( float(_reserved_size) * _grow_factor );
+            rehash( float(_reserved_size) * _grow_factor / float(bucket_size) );
         }
         // already increase size, since we always insert the element
         ++_size;
@@ -537,7 +537,7 @@ public:
     bool   empty()             const { return _size == 0; }
     size_t size()              const { return _size; }
     size_t capacity()          const { return _max_size; }
-    size_t bucket_count()      const { return _reserved_size; }
+    size_t bucket_count()      const { return _hp.prime(); }
     float  load_factor()       const { return float(_size) / float(_reserved_size); }
     float  max_load_factor()   const { return _max_load_factor; }
     float  grow_factor()       const { return _grow_factor; }
@@ -553,7 +553,7 @@ public:
         _max_size = float(_hp.prime()) * float(bucket_size) * _max_load_factor;
         // changing _max_size may trigger a rehash (if autogrow is enabled)
         if (is_auto_grow && _size > _max_size)
-            rehash( _grow_factor * std::max<float>( float(_reserved_size), float(_size)/_max_load_factor ));
+            rehash( _grow_factor * std::max<float>( float(_reserved_size), float(_size)/_max_load_factor ) / float(bucket_size) );
     }
     
     void grow_factor(float gf)
@@ -693,7 +693,7 @@ public:
         {
             if (!is_auto_grow)
                 return false;
-            rehash( float(_reserved_size) * _grow_factor );
+            rehash( float(_reserved_size) * _grow_factor / float(bucket_size) );
         }
         // already increase size, since we always insert the element
         ++_size;
