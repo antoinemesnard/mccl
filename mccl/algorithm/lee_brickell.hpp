@@ -71,6 +71,7 @@ public:
     void initialize(const cmat_view& _H12T, size_t _H2Tcolumns, const cvec_view& _S, unsigned int w, callback_t _callback, void* _ptr) final
     {
         stats.cnt_initialize.inc();
+        stats.time_initialize.start();
         // copy parameters from current config
         p = config.p;
         if (p == 0)
@@ -91,15 +92,19 @@ public:
 
         firstwordmask = detail::lastwordmask(columns);
         padmask = ~firstwordmask;
+
+        stats.time_initialize.stop();
     }
 
     // API member function
     void solve() final
     {
         stats.cnt_solve.inc();
+        stats.time_solve.start();
         prepare_loop();
         while (loop_next())
             ;
+        stats.time_solve.stop();
         stats.refresh();
     }
     
@@ -107,6 +112,7 @@ public:
     void prepare_loop() final
     {
         stats.cnt_prepare_loop.inc();
+        stats.time_prepare_loop.start();
         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_prepareloop);
 
         firstwords.resize(rows);
@@ -116,12 +122,15 @@ public:
                 firstwords[i] = *H12T.word_ptr(i);
             Sval = (*S.word_ptr());
         }
+        
+        stats.time_prepare_loop.stop();
     }
 
     // API member function
     bool loop_next() final
     {
         stats.cnt_loop_next.inc();
+        stats.time_loop_next.start();
         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_loopnext);
 
         if (words == 0)
@@ -147,6 +156,7 @@ public:
                     return true;
                 });
         }
+        stats.time_loop_next.stop();
         return false;
     }
     

@@ -100,6 +100,13 @@ struct time_statistic
     time_point _end = clock_t::now();
     return duration_t(_end - _start).count();
   }
+  void print(std::string name, std::ostream& o = std::cerr)
+  {
+    o << std::setw(15) << name << ":";
+    o << std::setw(15) << this->total() << ",";
+    o << std::setw(15) << this->mean() << ",";
+    o << std::setw(15) << this->median() << std::endl; 
+  }
   time_point _start;
 };
 
@@ -189,6 +196,12 @@ public:
   counter_statistic cnt_solve;
   counter_statistic cnt_check_solution;
   // time
+  time_statistic time_initialize;
+  time_statistic time_callback;
+  time_statistic time_prepare_loop;
+  time_statistic time_loop_next;
+  time_statistic time_solve;
+  time_statistic time_check_solution;
 
   // cpucycle
 
@@ -204,11 +217,14 @@ public:
 
   // print
   void print(std::ostream& o = std::cerr) {
+    if (cnt_initialize._counter != 0)
+      refresh();
     if(cnt_solve.size()==0) {
       o << "No statistics " << name << std::endl;
       return;
     }
     o << "Decoder: " << name << std::endl;
+    o << "Counters: " << std::endl;
     o << std::setw(15+17) << "total count," << std::setw(16) << "mean count," << std::setw(16) << "median count," << std::endl;
     cnt_initialize.print("Initialize", o);
     cnt_callback.print("Callback", o);
@@ -216,6 +232,18 @@ public:
     cnt_loop_next.print("Loop next", o);
     cnt_solve.print("Solve", o);
     cnt_check_solution.print("Check solution", o);
+    o << "Time: " << std::endl;
+    o << std::setw(15+17) << "total time," << std::setw(16) << "mean time," << std::setw(16) << "median time," << std::endl;
+    time_initialize.print("Initialize", o);
+    if (time_callback.size() != 0)
+      time_callback.print("Callback", o);
+    if (time_prepare_loop.size() != 0)
+      time_prepare_loop.print("Prepare loop", o);
+    time_loop_next.print("Loop next", o);
+    if (time_solve.size() != 0)
+      time_solve.print("Solve", o);
+    if (time_check_solution.size() != 0)
+      time_check_solution.print("Check solution", o);
     o << std::endl;
   }
 };

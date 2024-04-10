@@ -106,6 +106,7 @@ public:
     void initialize(const cmat_view& _H, const cvec_view& _S, unsigned int _w)
     {
         stats.cnt_initialize.inc();
+        stats.time_initialize.start();
         // set parameters according to current config
         l = config.l;
         u = config.u;
@@ -128,24 +129,30 @@ public:
         
         sol.clear();
         solution = vec();
+
+        stats.time_initialize.stop();
     }
 
     // probabilistic preparation of loop invariant
     void prepare_loop(bool _benchmark = false)
     {
         stats.cnt_prepare_loop.inc();
+        stats.time_prepare_loop.start();
         benchmark = _benchmark;
         subISDT->initialize(HST.H12T(), HST.H2T().columns(), HST.S2(), w, make_ISD_callback(*this), this);
+        stats.time_prepare_loop.stop();
     }
 
     // perform one loop iteration, return true if successful and store result in e
     bool loop_next()
     {
         stats.cnt_loop_next.inc();
+        stats.time_loop_next.start();
         // swap u rows in HST & bring in echelon form
         HST.update(u, update_type);
         // find all subISD solutions
         subISDT->solve();
+        stats.time_loop_next.stop();
         return !sol.empty();
     }
 
@@ -153,9 +160,11 @@ public:
     void solve()
     {
         stats.cnt_solve.inc();
+        stats.time_solve.start();
         prepare_loop();
         while (!loop_next())
             ;
+        stats.time_solve.stop();
         stats.refresh();
     }
 
@@ -175,8 +184,10 @@ public:
     bool check_solution()
     {
         stats.cnt_check_solution.inc();
+        stats.time_check_solution.start();
         if (solution.columns() == 0)
             throw std::runtime_error("ISD_generic::check_solution: no solution");
+        stats.time_check_solution.stop();
         return check_SD_solution(Horg, Sorg, w, solution);
     }
     
@@ -185,6 +196,7 @@ public:
     inline bool callback(const uint32_t* begin, const uint32_t* end, unsigned int w1partial)
     {
             stats.cnt_callback.inc();
+            stats.time_callback.start();
             // weight of solution consists of w2 (=end-begin) + w1partial (given) + w1rest (computed below)
             size_t wsol = w1partial + (end - begin);
             if (wsol > w)
@@ -255,6 +267,7 @@ public:
                 solution.setbit(sol[i]);
             if (config.verify_solution && !check_solution())
                 throw std::runtime_error("ISD_generic::callback: internal error 3: solution is incorrect!");
+            stats.time_callback.stop();
             return false;
     }
     

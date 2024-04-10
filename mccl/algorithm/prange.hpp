@@ -33,29 +33,39 @@ public:
     // API member function
     void initialize(const cmat_view&, size_t H2Tcolumns, const cvec_view&, unsigned int, callback_t _callback, void* _ptr) final
     {
+        stats.cnt_initialize.inc();
+        stats.time_initialize.start();
         // should only be used with l=0
         if (H2Tcolumns != 0)
             throw std::runtime_error("subISDT_prange::initialize(): Prange doesn't support l>0");
         callback = _callback;
         ptr = _ptr;
+        stats.time_initialize.stop();
     }
     
     // API member function
     void prepare_loop() final
     {
+        stats.cnt_prepare_loop.inc();
     }
     
     // API member function
     bool loop_next() final
     {
+        stats.cnt_loop_next.inc();
+        stats.time_loop_next.start();        
         (*callback)(ptr, nullptr, nullptr, 0);
+        stats.time_loop_next.stop();
         return false;
     }
     
     // API member function
     void solve() final
     {
+        stats.cnt_solve.inc();
+        stats.time_solve.start();
         loop_next();
+        stats.time_solve.stop();
     }
     decoding_statistics get_stats() const { return stats; };
 private:
