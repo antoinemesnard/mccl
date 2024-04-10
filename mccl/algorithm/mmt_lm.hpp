@@ -113,9 +113,9 @@ public:
         hashmap.define_keymask(firstwordmask);
 
         // compute reasonable reserve sizes
-        size_t S = detail::binomial(rows2, p12);
-        hashmap12.reserve(S);
-        hashmap.reserve((S * S * S * S)>>(columns+l2) );
+        double S = detail::binomial<double>(rows2, p12);
+        hashmap12.reserve(size_t(S));
+        hashmap.reserve(size_t (S * S * S * S / pow(2.0, double(columns+l2))));
 
         stats.time_initialize.stop();
     }
