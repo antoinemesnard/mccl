@@ -7,6 +7,7 @@
 #include <mccl/tools/unordered_multimap.hpp>
 #include <mccl/tools/bitfield.hpp>
 #include <mccl/tools/enumerate.hpp>
+#include <mccl/tools/utils.hpp>
 
 MCCL_BEGIN_NAMESPACE
 
@@ -110,9 +111,11 @@ public:
         hashmap2.define_keymask(syndmask);
         hashmap.define_keymask(firstwordmask);
 
-        // TODO: compute reasonable reserve sizes
-        // hashmap12.reserve(...);
-        // hashmap.reserve(...);
+        // compute reasonable reserve sizes
+        size_t S = detail::binomial(rows2, p12);
+        hashmap1.reserve((S * S)>>columns);
+        hashmap2.reserve((S * S)>>columns);
+        hashmap.reserve((S * S * S * S)>>(columns+l2));
     }
 
     // API member function
