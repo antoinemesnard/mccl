@@ -248,6 +248,9 @@ public:
                                     while (itb < it4)
                                     { *it5 = *itb; ++itb; ++it5; }
 
+                                    if (size_t(it5 - it4) == p)
+                                        stats.cnt_candidates.inc();
+
                                     unsigned int w = hammingweight((val1 ^ val2) & padmask);
 
                                     MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
@@ -292,6 +295,13 @@ public:
     }
 
     decoding_statistics get_stats() const { return stats; };
+
+    double get_inverse_proba() const
+    {
+        size_t k = rows - columns;
+        size_t n = H12T.columns() + k;
+        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+    }
 
 private:
     callback_t callback;

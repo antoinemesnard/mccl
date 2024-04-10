@@ -195,6 +195,7 @@ public:
   counter_statistic cnt_loop_next;
   counter_statistic cnt_solve;
   counter_statistic cnt_check_solution;
+  counter_statistic cnt_candidates;
   // time
   time_statistic time_initialize;
   time_statistic time_callback;
@@ -213,6 +214,7 @@ public:
     cnt_loop_next.refresh();
     cnt_solve.refresh();
     cnt_check_solution.refresh();
+    cnt_candidates.refresh();
   }
 
   // print

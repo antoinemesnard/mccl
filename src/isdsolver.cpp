@@ -368,6 +368,12 @@ try
       std::cout << "\n=== Detailed statistics ===" << std::endl;
       ISD_ptr->get_stats().print(std::cout);
       subISD_ptr->get_stats().print(std::cout);
+
+      if (benchmark)
+      {
+        double est_running_time = subISD_ptr->get_inverse_proba() * ISD_ptr->get_stats().time_loop_next.total() / double(subISD_ptr->get_stats().cnt_candidates.total());
+        std::cout << "Estimated running time : " << est_running_time << "s" << std::endl;
+      }
     }
     
     return 0;

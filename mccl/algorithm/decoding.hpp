@@ -146,6 +146,8 @@ public:
 
     // retrieve statistics
     virtual decoding_statistics get_stats() const = 0;
+
+    virtual double get_inverse_proba() const = 0;
 };
 
 MCCL_END_NAMESPACE

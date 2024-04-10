@@ -5,6 +5,7 @@
 #include <mccl/algorithm/decoding.hpp>
 #include <mccl/algorithm/isdgeneric.hpp>
 #include <mccl/tools/enumerate.hpp>
+#include <mccl/tools/utils.hpp>
 
 MCCL_BEGIN_NAMESPACE
 
@@ -161,6 +162,13 @@ public:
     }
     
     decoding_statistics get_stats() const { return stats; };
+
+    double get_inverse_proba() const
+    {
+        size_t k = rows - columns;
+        size_t n = H12T.columns() + k;
+        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+    }
 
 private:
     callback_t callback;
