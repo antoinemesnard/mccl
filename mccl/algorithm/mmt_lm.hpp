@@ -114,6 +114,8 @@ public:
 
         // compute reasonable reserve sizes
         double S = detail::binomial<double>(rows2, p12);
+        hashmap12.clear();
+        hashmap.clear();
         hashmap12.reserve(size_t(S));
         hashmap.reserve(size_t (S * S * S * S / pow(2.0, double(columns+l2))));
 
@@ -265,8 +267,9 @@ public:
             });
         
         ++a;
+        state = state && (a < A);
         stats.time_loop_next.stop();
-        return (state && (a < A));
+        return state;
     }
 
     static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
@@ -296,12 +299,60 @@ public:
 
     decoding_statistics get_stats() const { return stats; };
 
+    void reset_stats() { stats.reset(); };
+
     double get_inverse_proba() const
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
         return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
     }
+
+    void optimize_parameters(size_t, unsigned int&, std::function<bool()>) { return; };
+    /* void optimize_parameters(unsigned int& config_l, std::function<bool()> run_test)
+    {
+        unsigned int lopt = config_l;
+        unsigned int popt = config.p;
+        unsigned int l2opt = config.l2;
+        unsigned int Aopt = config.A;
+        for (unsigned int ptest = 4; ptest <= 16; ptest += 4)
+        {
+            unsigned int ltest;
+            double power; // power = 2 ** (ltest / 2)
+            if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
+            else { ltest = 2; power = 2.0; }
+            while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
+            {
+                ltest += 2;
+                power *= 2.0;
+            }
+            unsigned int l2test = 1;
+            double power = 2.0;
+            while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
+            {
+                l2test += 1;
+                power *= 2.0;
+            }
+            config_l = ltest;
+            config.p = ptest;
+            config.l2 = l2test;
+            for (unsigned int Atest ...)
+            {
+                config.A = Atest;
+                if (f())
+                {
+                    lopt = ltest;
+                    popt = ptest;
+                    l2opt = l2test;
+                    Aopt = Atest;
+                }
+            }
+        }
+        config_l = lopt;
+        config.p = popt;
+        config.l2 = l2opt;
+        config.A = Aopt;
+    } */
 
 private:
     callback_t callback;

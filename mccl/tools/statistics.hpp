@@ -219,8 +219,6 @@ public:
 
   // print
   void print(std::ostream& o = std::cerr) {
-    if (cnt_initialize._counter != 0)
-      refresh();
     if(cnt_solve.size()==0) {
       o << "No statistics " << name << std::endl;
       return;
@@ -247,6 +245,24 @@ public:
     if (time_check_solution.size() != 0)
       time_check_solution.print("Check solution", o);
     o << std::endl;
+  }
+
+  // reset statistics
+  void reset() {
+    refresh();
+    cnt_initialize.clear();
+    cnt_callback.clear();
+    cnt_prepare_loop.clear();
+    cnt_loop_next.clear();
+    cnt_solve.clear();
+    cnt_check_solution.clear();
+    cnt_candidates.clear();
+    time_initialize.clear();
+    time_callback.clear();
+    time_prepare_loop.clear();
+    time_loop_next.clear();
+    time_solve.clear();
+    time_check_solution.clear();
   }
 };
 

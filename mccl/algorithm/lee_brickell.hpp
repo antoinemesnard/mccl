@@ -163,12 +163,16 @@ public:
     
     decoding_statistics get_stats() const { return stats; };
 
+    void reset_stats() { stats.reset(); };
+
     double get_inverse_proba() const
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
         return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
     }
+
+    void optimize_parameters(size_t, unsigned int&, std::function<bool()>) { return; }; // TODO
 
 private:
     callback_t callback;

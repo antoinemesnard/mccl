@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cfloat>
 #include <memory>
 
 using namespace mccl;
@@ -124,6 +125,9 @@ try
     bool benchmark = false;
     size_t min_bench_iterations;
     double min_bench_time;
+
+    // optimization options
+    bool optimize = false;
     
     // maximum width to print program options
     unsigned line_length = 78;
@@ -136,6 +140,7 @@ try
       auxopts("Extra options", line_length, line_length/2),
       genopts("Generator options", line_length, line_length/2),
       benchopts("Benchmark options", line_length, line_length/2),
+      optopts("Optimization options", line_length, line_length/2),
       isdopts("ISD options")
       ;
       
@@ -168,6 +173,9 @@ try
       ("minbenchits", po::value<size_t>(&min_bench_iterations)->default_value(100), "Minimum number of ISD iterations")
       ("minbenchtime", po::value<double>(&min_bench_time)->default_value(100.0), "Minimal total time (s) for benchmark")
       ;
+    optopts.add_options()
+      ("optimize", po::bool_switch(&optimize), "Instead of default/given parameters, use optimal parameters")
+      ;
 
     /* Collect submodule program options */
     std::vector< std::unique_ptr<module_configuration_API> > modules;
@@ -186,7 +194,7 @@ try
       ptr->options_description_insert(isdopts);
 
     /* Parse all program options */
-    allopts.add(cmdopts).add(auxopts).add(genopts).add(benchopts).add(isdopts);
+    allopts.add(cmdopts).add(auxopts).add(genopts).add(benchopts).add(isdopts).add(optopts);
     po::variables_map vm;
     // TODO: configuration file?
     // parse command line parameters
@@ -333,7 +341,35 @@ try
       H.reset(generator.H());
       S.reset(generator.S());
     }
-    
+
+    if (optimize)
+    {
+      double est_time, min_est_time = DBL_MAX;
+      ISD_ptr->optimize_parameters(k,
+        [&ISD_ptr, &subISD_ptr, &H, &S, w, &est_time, &min_est_time]()
+        {
+          // benchmark_ISD(*ISD_ptr, H, S, w, 1, 1.0);
+          ISD_ptr->initialize(H, S, w);
+          ISD_ptr->prepare_loop(true);
+          for (int i = 0; i < 10; ++i)
+            ISD_ptr->loop_next();
+          auto ISD_stats = ISD_ptr->get_stats();
+          auto subISD_stats = subISD_ptr->get_stats();
+          ISD_stats.refresh();
+          est_time = subISD_ptr->get_inverse_proba() * ISD_stats.time_loop_next.total() / double(subISD_stats.cnt_candidates.total());
+          ISD_ptr->reset_stats();
+          subISD_ptr->reset_stats();
+          if (est_time < min_est_time)
+          {
+            min_est_time = est_time;
+            return true;
+          }
+          return false;
+        });
+      subISD_conf_str = get_configuration_str(*subISD_ptr);
+      ISD_conf_str = get_configuration_str(*ISD_ptr);
+    }
+
     std::cout << "Run settings       : n=" << n << " k=" << k << " w=" << w << " trials=" << trials;
     if (vm.count("generate"))
       std::cout << " genseed=" << genseed;
@@ -362,20 +398,27 @@ try
       runtrials_ISD(*ISD_ptr, H,S,w, trials, quiet, vm.count("generate"), generator);
     }
 
+    auto ISD_stats = ISD_ptr->get_stats();
+    auto subISD_stats = subISD_ptr->get_stats();      
+
+    if (benchmark)
+    {
+      ISD_stats.refresh();
+      std::cout << subISD_ptr->get_inverse_proba() << std::endl;
+      std::cout << ISD_stats.time_loop_next.total() << std::endl;
+      std::cout << subISD_stats.cnt_candidates.total() << std::endl;
+      double est_running_time = subISD_ptr->get_inverse_proba() * ISD_stats.time_loop_next.total() / double(subISD_stats.cnt_candidates.total());
+      std::cout << "\nEstimated running time : " << est_running_time << "s" << std::endl;
+    }
+
     /* print detailed statistics */
     if (print_stats)
     {
       std::cout << "\n=== Detailed statistics ===" << std::endl;
-      ISD_ptr->get_stats().print(std::cout);
-      subISD_ptr->get_stats().print(std::cout);
-
-      if (benchmark)
-      {
-        double est_running_time = subISD_ptr->get_inverse_proba() * ISD_ptr->get_stats().time_loop_next.total() / double(subISD_ptr->get_stats().cnt_candidates.total());
-        std::cout << "Estimated running time : " << est_running_time << "s" << std::endl;
-      }
+      ISD_stats.print(std::cout);
+      subISD_stats.print(std::cout);
     }
-    
+
     return 0;
 }
 catch (std::exception& e)

@@ -115,6 +115,9 @@ public:
         // compute reasonable reserve sizes
         double S = detail::binomial<double>(rows2, p12);
         double L = S * S / pow(2.0, double(columns));
+        hashmap1.clear();
+        hashmap2.clear();
+        hashmap.clear();
         hashmap1.reserve(size_t(L));
         hashmap2.reserve(size_t(L));
         hashmap.reserve(size_t(L * L / pow(2.0, double(l2))));
@@ -323,12 +326,16 @@ public:
 
     decoding_statistics get_stats() const { return stats; };
 
+    void reset_stats() { stats.reset(); };
+
     double get_inverse_proba() const
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
         return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
     }
+
+    void optimize_parameters(size_t, unsigned int&, std::function<bool()>) { return; }; // TODO
 
 private:
     callback_t callback;

@@ -152,8 +152,9 @@ public:
         HST.update(u, update_type);
         // find all subISD solutions
         subISDT->solve();
+        bool sol_empty = sol.empty();
         stats.time_loop_next.stop();
-        return !sol.empty();
+        return !sol_empty;
     }
 
     // run loop until a solution is found
@@ -179,6 +180,16 @@ public:
         return stats;
     };
 
+    void reset_stats()
+    {
+        stats.reset();
+    }
+
+    void optimize_parameters(size_t _k, std::function<bool()> run_test)
+    {
+        subISDT->optimize_parameters(_k, config.l, run_test);
+    }
+
 
 
     bool check_solution()
@@ -187,8 +198,9 @@ public:
         stats.time_check_solution.start();
         if (solution.columns() == 0)
             throw std::runtime_error("ISD_generic::check_solution: no solution");
+        bool solution_checked = check_SD_solution(Horg, Sorg, w, solution);
         stats.time_check_solution.stop();
-        return check_SD_solution(Horg, Sorg, w, solution);
+        return solution_checked;
     }
     
 
@@ -199,8 +211,9 @@ public:
             stats.time_callback.start();
             // weight of solution consists of w2 (=end-begin) + w1partial (given) + w1rest (computed below)
             size_t wsol = w1partial + (end - begin);
-            if (wsol > w)
-                return true;
+            if (wsol > w) {
+                stats.time_callback.stop();
+                return true; }
 
             wsol = end - begin;
             if (begin == end)
@@ -211,8 +224,9 @@ public:
                 for (unsigned i = 0; i < blocks_per_row; ++i,++Sptr,++Cptr)
                 {
                     wsol += hammingweight( *Cptr = *Sptr );
-                    if (wsol > w)
-                        return true;
+                    if (wsol > w) {
+                        stats.time_callback.stop();
+                        return true; }
                 }
             } else if (begin == end-1)
             {
@@ -223,8 +237,9 @@ public:
                 for (unsigned i = 0; i < blocks_per_row; ++i,++Cptr,++Sptr,++HTrowptr)
                 {
                     wsol += hammingweight( *Cptr = *Sptr ^ *HTrowptr );
-                    if (wsol > w)
-                        return true;
+                    if (wsol > w) {
+                        stats.time_callback.stop();
+                        return true; }
                 }
             } else {
                 // case selection size >= 2
@@ -239,14 +254,16 @@ public:
                         *Cptr = *Cptr ^ *(H12T_blockptr + block_stride*(*p) + i);
                     }
                     wsol += hammingweight( *Cptr = *Cptr ^ *(H12T_blockptr + block_stride*(*p) + i) );
-                    if (wsol > w)
-                        return true;
+                    if (wsol > w) {
+                        stats.time_callback.stop();
+                        return true; }
                 }
             }
 
             // this should be a correct solution at this point
-            if (benchmark)
-                return true;
+            if (benchmark) {
+                stats.time_callback.stop();
+                return true; }
 
             // 3. construct full solution on echelon and ISD part
             if (wsol != (end-begin) + hammingweight(C))

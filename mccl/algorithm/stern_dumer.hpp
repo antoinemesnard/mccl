@@ -115,6 +115,7 @@ public:
 
         // compute a reasonable reserve size
         double S = detail::binomial<double>(rows2, p2);
+        hashmap.clear();
         hashmap.reserve(size_t(S * S / pow(2.0, double(columns))));
 
         stats.time_initialize.stop();
@@ -229,11 +230,40 @@ public:
 
     decoding_statistics get_stats() const { return stats; };
 
+    void reset_stats() { stats.reset(); };
+
     double get_inverse_proba() const
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
         return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+    }
+
+    void optimize_parameters(size_t k, unsigned int& config_l, std::function<bool()> run_test)
+    {
+        unsigned int lopt = config_l;
+        unsigned int popt = config.p;
+        for (unsigned int ptest = 2; ptest <= 8; ptest += 2)
+        {
+            unsigned int ltest;
+            double power;
+            if (k & 1) { ltest = 7; power = 128.0; }
+            else { ltest = 6; power = 64.0; }
+            while (power < detail::binomial<double>((k + ltest) / 2, ptest / 2))
+            {
+                ltest += 2;
+                power *= 4.0;
+            }
+            config_l = ltest;
+            config.p = ptest;
+            if (run_test())
+            {
+                lopt = ltest;
+                popt = ptest;
+            }
+        }
+        config_l = lopt;
+        config.p = popt;
     }
 
 private:

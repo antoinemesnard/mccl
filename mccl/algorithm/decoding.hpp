@@ -66,6 +66,10 @@ public:
     
     // retrieve statistics
     virtual decoding_statistics get_stats() const = 0;
+
+    virtual void reset_stats() = 0;
+
+    virtual void optimize_parameters(size_t k, std::function<bool()> run_test) = 0;
 };
 
 template<typename ISD_t = syndrome_decoding_API>
@@ -147,7 +151,11 @@ public:
     // retrieve statistics
     virtual decoding_statistics get_stats() const = 0;
 
+    virtual void reset_stats() = 0;
+
     virtual double get_inverse_proba() const = 0;
+
+    virtual void optimize_parameters(size_t k, unsigned int& l, std::function<bool()> run_test) = 0;
 };
 
 MCCL_END_NAMESPACE
