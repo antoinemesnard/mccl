@@ -114,13 +114,13 @@ public:
 
         // compute reasonable reserve sizes
         double S = detail::binomial<double>(rows2, p12);
-        double L = S * S / pow(2.0, double(columns));
+        double L = S * S / pow(2.0, double(l2));
         hashmap1.clear();
         hashmap2.clear();
         hashmap.clear();
         hashmap1.reserve(size_t(L));
         hashmap2.reserve(size_t(L));
-        hashmap.reserve(size_t(L * L / pow(2.0, double(l2))));
+        hashmap.reserve(size_t(L * L / pow(2.0, double(l1))));
 
         stats.time_initialize.stop();
     }
