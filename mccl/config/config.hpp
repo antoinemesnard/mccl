@@ -91,6 +91,12 @@ using std::size_t;
 using bigint_t = ::mpz_class;
 using bigfloat_t = ::mpf_class;
 
+typedef struct pair_uint64_s // not using std::pair because we need a trivial type
+{
+    uint64_t first;
+    uint64_t second;
+} pair_uint64_t ;
+
 typedef std::map<std::string,std::string> configmap_t;
 
 namespace detail

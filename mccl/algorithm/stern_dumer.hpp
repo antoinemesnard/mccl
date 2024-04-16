@@ -148,6 +148,8 @@ public:
         bitfield.clear();
         hashmap.clear();
 
+        state = true;
+
         stats.time_prepare_loop.stop();
     }
 
@@ -173,35 +175,40 @@ public:
                 if (bitfield.stage2(val))
                     hashmap.insert(val, pack_indices(idxbegin,idxend) );
             });
+hashmap.finalize_insert();
         // stage 3: retrieve matches from left-table and process
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p1,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
-                bool state = true;
-                if (bitfield.stage3(val1))
+                                if (bitfield.stage3(val1))
                 {
                     uint32_t* it = idx+0;
                     // note that left-table indices are offset rows2 in firstwords
                     for (auto it2 = idxbegin; it2 != idxend; ++it2,++it)
                         *it = *it2 + rows2;
-                    hashmap.match(val1,
-                        [this, val1, it, &state](const uint64_t val2, const uint64_t packed_indices)
-                        {
-                            auto it2 = unpack_indices(packed_indices, it);
-                            unsigned int w = hammingweight((val1 ^ val2) & padmask);
-
-                            stats.cnt_candidates.inc();
-                            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                            if (!(*callback)(ptr, idx+0, it2, w))
-                                state = false;
-                            return state;
-                        });
+                    uint64_t packed_indices1 = pack_indices(idx+0, it);
+                    hashmap.queue_match(val1, packed_indices1, process_candidate);
                 }
                 return state;
             });
+hashmap.finalize_match(process_candidate);
         stats.time_loop_next.stop();
         return false;
     }
+
+    std::function<bool(const uint64_t, const uint64_t, const uint64_t, const uint64_t)> process_candidate =
+        [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
+        {
+            auto it = unpack_indices(packed_indices1, idx+0);
+            auto it2 = unpack_indices(packed_indices2, it);
+            unsigned int w = hammingweight((val1 ^ val2) & padmask);
+
+            stats.cnt_candidates.inc();
+            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
+            if (!(*callback)(ptr, idx+0, it2, w))
+                state = false;
+            return state;
+        };
     
     static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
     {
@@ -275,13 +282,15 @@ private:
     unsigned int wmax;
     
     staged_bitfield<false,false> bitfield;
-    cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap;
+    batch_unordered_multimap<uint64_t, uint64_t, uint64_t, true> hashmap;
     
     enumerate_t<uint32_t> enumerate;
     uint32_t idx[16];
 
     std::vector<uint64_t> firstwords;
     uint64_t firstwordmask, padmask, Sval;
+
+    bool state;
     
     size_t p, p1, p2, rows, rows1, rows2;
     

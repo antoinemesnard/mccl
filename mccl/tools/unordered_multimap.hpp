@@ -484,12 +484,13 @@ private:
 //   - finalize_insert / finalize_match: process all elements in the queue and clear the queue
 // - !! do not forget to call finalize_insert / finalize_match at the end of the insert / match phase
 
-template<typename Key = uint64_t, typename Value = uint64_t, bool usekeymask = false, typename traits = default_unordered_multimap_traits>
+template<typename Key = uint64_t, typename Value = uint64_t, typename AuxData = uintptr_t, bool usekeymask = false, typename traits = default_unordered_multimap_traits>
 class batch_unordered_multimap
 {
 public:
     typedef Key key_type;
     typedef Value value_type;
+    typedef AuxData aux_data_type;
     typedef detail::hash_prime hash_prime;
 
     static constexpr bool is_auto_grow = traits::is_auto_grow;
@@ -771,7 +772,7 @@ public:
     }
 
     template<typename FF>
-    void queue_match(const key_type& k, uintptr_t aux_data, FF&& f)
+    void queue_match(const key_type& k, aux_data_type aux_data, FF&& f)
     {
         // compute bucket
         uint64_t b = this->bucket(k);
@@ -806,7 +807,7 @@ public:
                     for (size_t i = 0; i < B.size; ++i)
                     {
                         if (key_cmp(B.keys[i], item.key))
-                            if (!call_function(f, item.aux_data, B.keys[i], B.values[i]))
+                            if (!call_function(f, item.key, item.aux_data, B.keys[i], B.values[i]))
                                 return false;
                     }
                 } else
@@ -814,7 +815,7 @@ public:
                     for (size_t i = 0; i < bucket_size; ++i)
                     {
                         if (key_cmp(B.keys[i], item.key))
-                            if (!call_function(f, item.aux_data, B.keys[i], B.values[i]))
+                            if (!call_function(f, item.key, item.aux_data, B.keys[i], B.values[i]))
                                 return false;
                     }
                     if (++b == _hp.prime())
@@ -855,7 +856,7 @@ private:
     
     struct match_item_t {
         key_type key;
-        uintptr_t aux_data;
+        aux_data_type aux_data;
         uint64_t bucket;
     };
     aligned_vector<match_item_t> _match_queue;

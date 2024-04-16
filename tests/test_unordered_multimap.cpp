@@ -74,7 +74,7 @@ struct counter_t
     uint64_t c;
     counter_t(): c(0) {}
     void operator()(uint64_t, uint64_t v) { c += v; }
-    void operator()(uintptr_t, uint64_t, uint64_t v) { c += v; }
+    void operator()(uint64_t, uintptr_t, uint64_t, uint64_t v) { c += v; }
 };
 
 template<typename HT>

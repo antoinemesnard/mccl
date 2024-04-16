@@ -154,6 +154,7 @@ public:
                 uint64_t packed_indices = pack_indices(idxbegin, idxend);
                 hashmap12.insert(val, packed_indices);
             });
+hashmap12.finalize_insert();
 
         a = 0;
 
@@ -175,20 +176,28 @@ public:
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](uint64_t val1)
             {
-                hashmap12.match(val1 ^ a,
-                     [this, val1](const uint64_t val2, const uint64_t)
+                hashmap12.queue_match(val1 ^ a, 0,
+                     [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
                      {
                         bitfield.stage1((val1 ^ val2)>>l2);
                      });
+            });
+hashmap12.finalize_match(
+            [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
+            {
+            bitfield.stage1((val1 ^ val2)>>l2);
             });
         
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
                 val1 ^= Sval;
-                uint64_t packed_indices1 = pack_indices(idxbegin, idxend);
-                hashmap12.match(val1 ^ a,
-                    [this, val1, packed_indices1](const uint64_t val2, const uint64_t packed_indices2)
+                uint32_t* it = idx+0;
+                for (auto it2 = idxbegin; it2 != idxend; ++it2, ++it)
+                    *it = *it2 + rows2;
+                uint64_t packed_indices1 = pack_indices(idx+0, it);
+                hashmap12.queue_match(val1 ^ a, packed_indices1,
+                    [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
                     {
                         uint64_t val = val1 ^ val2;
                         if (bitfield.stage2(val>>l2))
@@ -198,6 +207,17 @@ public:
                         }
                     });
             });
+hashmap12.finalize_match(
+            [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
+            {
+                uint64_t val = val1 ^ val2;
+                if (bitfield.stage2(val>>l2))
+                {
+                    pair_uint64_t packed_indices = { packed_indices1, packed_indices2 };
+                    hashmap.insert(val, packed_indices);
+                }
+            });
+        hashmap.finalize_insert();
         
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val11)
@@ -205,20 +225,46 @@ public:
                 uint32_t* it = idx+0;
                 for (auto it2 = idxbegin; it2 != idxend; ++it2, ++it)
                     *it = *it2 + rows2;
-                hashmap12.match(val11 ^ a,
-                    [this, val11, it](const uint64_t val12, const uint64_t packed_indices12)
+                uint64_t packed_indices11 = pack_indices(idx+0, it);
+                hashmap12.queue_match(val11 ^ a, packed_indices11,
+                    [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
                     {
                         uint64_t val1 = val11 ^ val12;
                         if (bitfield.stage3(val1>>l2))
                         {
-                            auto it2 = unpack_indices(packed_indices12, it);
-                            hashmap.match(val1,
-                                [this, val1, it, it2](const uint64_t val2, const pair_uint64_t packed_indices2)
+                            pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                            hashmap.queue_match(val1, packed_indices1, process_candidate);
+                        }
+                        return state;
+                    });
+            return state;
+            });
+                            hashmap12.finalize_match(
+            [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
+            {
+                uint64_t val1 = val11 ^ val12;
+                if (bitfield.stage3(val1>>l2))
+                {
+                    pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                    hashmap.queue_match(val1, packed_indices1, process_candidate);
+                }
+                return state;
+            });
+        hashmap.finalize_match(process_candidate);
+        
+        ++a;
+        state = state && (a < A);
+        stats.time_loop_next.stop();
+        return state;
+    }
+
+    std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
+        [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
                                 {
+auto it = unpack_indices(packed_indices1.first, idx+0);
+            auto it2 = unpack_indices(packed_indices1.second, it);
                                     auto it3 = unpack_indices(packed_indices2.first, it2);
-                                    for (auto ita = it2; ita != it3; ++ita)
-                                        *ita += rows2;
-                                    auto it4 = unpack_indices(packed_indices2.second, it3);
+                                                                        auto it4 = unpack_indices(packed_indices2.second, it3);
 
                                     auto it5 = it4;
                                     auto ita = it - 1, itb = it2;
@@ -255,22 +301,11 @@ public:
 
                                     unsigned int w = hammingweight((val1 ^ val2) & padmask);
 
-                                    MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                                    if (!(*callback)(ptr, it4, it5, w))
-                                        state = false;
-                                    return state;
-                                });
-                        }
-                        return state;
-                    });
+            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
+            if (!(*callback)(ptr, it4, it5, w))
+                state = false;
             return state;
-            });
-        
-        ++a;
-        state = state && (a < A);
-        stats.time_loop_next.stop();
-        return state;
-    }
+                                };
 
     static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
     {
@@ -364,14 +399,8 @@ private:
 
     staged_bitfield<false,false> bitfield;
 
-    typedef struct pair_uint64_s // not using std::pair because we need a trivial type
-    {
-        uint64_t first;
-        uint64_t second;
-    } pair_uint64_t ;
-
-    cacheline_unordered_multimap<uint64_t, uint64_t, true> hashmap12;
-    cacheline_unordered_multimap<uint64_t, pair_uint64_t, true> hashmap;
+    batch_unordered_multimap<uint64_t, uint64_t, uint64_t, true> hashmap12;
+    batch_unordered_multimap<uint64_t, pair_uint64_t, pair_uint64_t, true> hashmap;
 
     enumerate_t<uint32_t> enumerate;
     uint32_t idx[32];
