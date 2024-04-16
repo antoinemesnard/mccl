@@ -148,13 +148,15 @@ public:
         
         hashmap12.clear();
 
+        stats.time_other_1.start();
         enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows2, p12,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val)
             {
                 uint64_t packed_indices = pack_indices(idxbegin, idxend);
                 hashmap12.insert(val, packed_indices);
             });
-hashmap12.finalize_insert();
+        hashmap12.finalize_insert();
+        stats.time_other_1.stop();
 
         a = 0;
 
@@ -173,6 +175,7 @@ hashmap12.finalize_insert();
         bitfield.clear();
         hashmap.clear();
 
+        stats.time_other_2.start();
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](uint64_t val1)
             {
@@ -182,12 +185,14 @@ hashmap12.finalize_insert();
                         bitfield.stage1((val1 ^ val2)>>l2);
                      });
             });
-hashmap12.finalize_match(
+        hashmap12.finalize_match(
             [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
             {
             bitfield.stage1((val1 ^ val2)>>l2);
             });
+        stats.time_other_2.stop();
         
+        stats.time_other_3.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
@@ -207,7 +212,7 @@ hashmap12.finalize_match(
                         }
                     });
             });
-hashmap12.finalize_match(
+        hashmap12.finalize_match(
             [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
             {
                 uint64_t val = val1 ^ val2;
@@ -218,7 +223,9 @@ hashmap12.finalize_match(
                 }
             });
         hashmap.finalize_insert();
+        stats.time_other_3.stop();
         
+        stats.time_other_4.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val11)
             {
@@ -239,7 +246,7 @@ hashmap12.finalize_match(
                     });
             return state;
             });
-                            hashmap12.finalize_match(
+        hashmap12.finalize_match(
             [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
             {
                 uint64_t val1 = val11 ^ val12;
@@ -251,6 +258,7 @@ hashmap12.finalize_match(
                 return state;
             });
         hashmap.finalize_match(process_candidate);
+        stats.time_other_4.stop();
         
         ++a;
         state = state && (a < A);
@@ -260,52 +268,52 @@ hashmap12.finalize_match(
 
     std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
         [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
-                                {
-auto it = unpack_indices(packed_indices1.first, idx+0);
+        {
+            auto it = unpack_indices(packed_indices1.first, idx+0);
             auto it2 = unpack_indices(packed_indices1.second, it);
-                                    auto it3 = unpack_indices(packed_indices2.first, it2);
-                                                                        auto it4 = unpack_indices(packed_indices2.second, it3);
+            auto it3 = unpack_indices(packed_indices2.first, it2);
+            auto it4 = unpack_indices(packed_indices2.second, it3);
 
-                                    auto it5 = it4;
-                                    auto ita = it - 1, itb = it2;
-                                    while (ita >= idx+0 && itb < it3)
-                                    {   if (*ita == *itb)
-                                        { --ita; ++itb; }
-                                        else
-                                        {   if (*ita > *itb)
-                                            { *it5 = *ita; --ita; }
-                                            else
-                                            { *it5 = *itb; ++itb; }
-                                            ++it5; } }
-                                    while (ita >= idx+0)
-                                    { *it5 = *ita; --ita; ++it5; }
-                                    while (itb < it3)
-                                    { *it5 = *itb; ++itb; ++it5; }
-                                    ita = it; itb = it3;
-                                    while (ita < it2 && itb < it4)
-                                    {   if (*ita == *itb)
-                                        { ++ita; ++itb; }
-                                        else
-                                        {   if (*ita > *itb)
-                                            { *it5 = *ita; ++ita; }
-                                            else
-                                            { *it5 = *itb; ++itb; }
-                                            ++it5; } }
-                                    while (ita < it2)
-                                    { *it5 = *ita; ++ita; ++it5; }
-                                    while (itb < it4)
-                                    { *it5 = *itb; ++itb; ++it5; }
+            auto it5 = it4;
+            auto ita = it - 1, itb = it2;
+            while (ita >= idx+0 && itb < it3)
+            {   if (*ita == *itb)
+                { --ita; ++itb; }
+                else
+                {   if (*ita > *itb)
+                    { *it5 = *ita; --ita; }
+                    else
+                    { *it5 = *itb; ++itb; }
+                    ++it5; } }
+            while (ita >= idx+0)
+            { *it5 = *ita; --ita; ++it5; }
+            while (itb < it3)
+            { *it5 = *itb; ++itb; ++it5; }
+            ita = it; itb = it3;
+            while (ita < it2 && itb < it4)
+            {   if (*ita == *itb)
+                { ++ita; ++itb; }
+                else
+                {   if (*ita > *itb)
+                    { *it5 = *ita; ++ita; }
+                    else
+                    { *it5 = *itb; ++itb; }
+                    ++it5; } }
+            while (ita < it2)
+            { *it5 = *ita; ++ita; ++it5; }
+            while (itb < it4)
+            { *it5 = *itb; ++itb; ++it5; }
 
-                                    if (size_t(it5 - it4) == p)
-                                        stats.cnt_candidates.inc();
+            if (size_t(it5 - it4) == p)
+                stats.cnt_candidates.inc();
 
-                                    unsigned int w = hammingweight((val1 ^ val2) & padmask);
+            unsigned int w = hammingweight((val1 ^ val2) & padmask);
 
             MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
             if (!(*callback)(ptr, it4, it5, w))
                 state = false;
             return state;
-                                };
+        };
 
     static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
     {
@@ -352,7 +360,7 @@ auto it = unpack_indices(packed_indices1.first, idx+0);
         double power;
         for (ptest = 4; ptest <= 16; ptest += 4)
         {
-                        if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
+            if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
             else { ltest = 2; power = 2.0; }
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
             {
@@ -366,18 +374,18 @@ auto it = unpack_indices(packed_indices1.first, idx+0);
                 l2test += 1;
                 power *= 2.0;
             }
-Atest = 1;
+            Atest = 1;
             config_l = ltest;
             config.p = ptest;
             config.l2 = l2test;
             config.A = Atest;
-                if (run_test())
-                {
-                    lopt = ltest;
-                    popt = ptest;
-                    l2opt = l2test;
-                    Aopt = Atest;
-                            }
+            if (run_test())
+            {
+                lopt = ltest;
+                popt = ptest;
+                l2opt = l2test;
+                Aopt = Atest;
+            }
         }
         config_l = lopt;
         config.p = popt;

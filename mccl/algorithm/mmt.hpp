@@ -169,6 +169,7 @@ public:
         stats.time_loop_next.start();
         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_loopnext);
 
+        stats.time_other_1.start();
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](uint64_t val)
             {
@@ -177,7 +178,9 @@ public:
                 val ^= Sval;
                 bitfield2.stage1(val);
             });
+        stats.time_other_1.stop();
         
+        stats.time_other_2.start();
         enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows2, p12,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val)
             {
@@ -194,7 +197,9 @@ public:
             });
         hashmap1.finalize_insert();
         hashmap2.finalize_insert();
+        stats.time_other_2.stop();
         
+        stats.time_other_3.start();
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](uint64_t val1)
             {
@@ -212,7 +217,9 @@ public:
             {
                 bitfield.stage1((val1 ^ val2)>>l2);
             });
+        stats.time_other_3.stop();
         
+        stats.time_other_4.start(),
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
@@ -246,7 +253,9 @@ public:
                 }
             });
         hashmap.finalize_insert();
+        stats.time_other_4.stop();
         
+        stats.time_other_5.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val11)
             {
@@ -282,6 +291,7 @@ public:
                 return state;
             });
         hashmap.finalize_match(process_candidate);
+        stats.time_other_5.stop();
         stats.time_loop_next.stop();
         return false;
     }

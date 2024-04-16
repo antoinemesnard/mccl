@@ -161,13 +161,16 @@ public:
         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_loopnext);
 
         // stage 1: store left-table in bitfield
+        stats.time_other_1.start();
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p1,
             [this](uint64_t val)
             { 
                 bitfield.stage1(val); 
             });
+        stats.time_other_1.stop();
         // stage 2: compare right-table with bitfield: store matches
         // note we keep the packed indices at offset 0 in firstwords for right-table
+        stats.time_other_2.start();
         enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows2, p2,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val)
             {
@@ -175,12 +178,14 @@ public:
                 if (bitfield.stage2(val))
                     hashmap.insert(val, pack_indices(idxbegin,idxend) );
             });
-hashmap.finalize_insert();
+        hashmap.finalize_insert();
+        stats.time_other_2.stop();
         // stage 3: retrieve matches from left-table and process
+        stats.time_other_3.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p1,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
-                                if (bitfield.stage3(val1))
+                if (bitfield.stage3(val1))
                 {
                     uint32_t* it = idx+0;
                     // note that left-table indices are offset rows2 in firstwords
@@ -191,7 +196,8 @@ hashmap.finalize_insert();
                 }
                 return state;
             });
-hashmap.finalize_match(process_candidate);
+        hashmap.finalize_match(process_candidate);
+        stats.time_other_3.stop();
         stats.time_loop_next.stop();
         return false;
     }
@@ -253,7 +259,7 @@ hashmap.finalize_match(process_candidate);
         double power;
         for (ptest = 2; ptest <= 8; ptest += 2)
         {
-                        if (k & 1) { ltest = 7; power = 128.0; }
+            if (k & 1) { ltest = 7; power = 128.0; }
             else { ltest = 6; power = 64.0; }
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 2))
             {

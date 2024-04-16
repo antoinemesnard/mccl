@@ -203,6 +203,11 @@ public:
   time_statistic time_loop_next;
   time_statistic time_solve;
   time_statistic time_check_solution;
+  time_statistic time_other_1;
+  time_statistic time_other_2;
+  time_statistic time_other_3;
+  time_statistic time_other_4;
+  time_statistic time_other_5;
 
   // cpucycle
 
@@ -244,6 +249,16 @@ public:
       time_solve.print("Solve", o);
     if (time_check_solution.size() != 0)
       time_check_solution.print("Check solution", o);
+    if (time_other_1.size() != 0)
+      time_other_1.print("Other 1", o);
+    if (time_other_2.size() != 0)
+      time_other_2.print("Other 2", o);
+    if (time_other_3.size() != 0)
+      time_other_3.print("Other 3", o);
+    if (time_other_4.size() != 0)
+      time_other_4.print("Other 4", o);
+    if (time_other_5.size() != 0)
+      time_other_5.print("Other 5", o);
     o << std::endl;
   }
 
@@ -263,6 +278,11 @@ public:
     time_loop_next.clear();
     time_solve.clear();
     time_check_solution.clear();
+    time_other_1.clear();
+    time_other_2.clear(),
+    time_other_3.clear();
+    time_other_4.clear();
+    time_other_5.clear();
   }
 };
 
