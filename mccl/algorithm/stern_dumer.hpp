@@ -248,13 +248,12 @@ hashmap.finalize_match(process_candidate);
 
     void optimize_parameters(size_t k, unsigned int& config_l, std::function<bool()> run_test)
     {
-        unsigned int lopt = config_l;
-        unsigned int popt = config.p;
-        for (unsigned int ptest = 2; ptest <= 8; ptest += 2)
+        unsigned int lopt = config_l, ltest;
+        unsigned int popt = config.p, ptest;
+        double power;
+        for (ptest = 2; ptest <= 8; ptest += 2)
         {
-            unsigned int ltest;
-            double power;
-            if (k & 1) { ltest = 7; power = 128.0; }
+                        if (k & 1) { ltest = 7; power = 128.0; }
             else { ltest = 6; power = 64.0; }
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 2))
             {

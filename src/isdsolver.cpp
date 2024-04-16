@@ -128,6 +128,7 @@ try
 
     // optimization options
     bool optimize = false;
+    size_t opt_iterations;
     
     // maximum width to print program options
     unsigned line_length = 78;
@@ -175,6 +176,7 @@ try
       ;
     optopts.add_options()
       ("optimize", po::bool_switch(&optimize), "Instead of default/given parameters, use optimal parameters")
+      ("optits", po::value<size_t>(&opt_iterations)->default_value(10), "Minimum number of ISD iterations for each tested parameters set")
       ;
 
     /* Collect submodule program options */
@@ -346,17 +348,16 @@ try
     {
       double est_time, min_est_time = DBL_MAX;
       ISD_ptr->optimize_parameters(k,
-        [&ISD_ptr, &subISD_ptr, &H, &S, w, &est_time, &min_est_time]()
+        [&ISD_ptr, &subISD_ptr, &H, &S, w, opt_iterations, &est_time, &min_est_time]()
         {
-          // benchmark_ISD(*ISD_ptr, H, S, w, 1, 1.0);
           ISD_ptr->initialize(H, S, w);
           ISD_ptr->prepare_loop(true);
-          for (int i = 0; i < 10; ++i)
+          for (size_t i = 0; i < opt_iterations; ++i)
             ISD_ptr->loop_next();
           auto ISD_stats = ISD_ptr->get_stats();
           auto subISD_stats = subISD_ptr->get_stats();
           ISD_stats.refresh();
-          est_time = subISD_ptr->get_inverse_proba() * ISD_stats.time_loop_next.total() / double(subISD_stats.cnt_candidates.total());
+          est_time = std::ceil(subISD_ptr->get_inverse_proba() * double(ISD_stats.cnt_loop_next.total()) / double(subISD_stats.cnt_candidates.total())) * ISD_stats.time_loop_next.mean();
           ISD_ptr->reset_stats();
           subISD_ptr->reset_stats();
           if (est_time < min_est_time)
@@ -404,11 +405,10 @@ try
     if (benchmark)
     {
       ISD_stats.refresh();
-      std::cout << subISD_ptr->get_inverse_proba() << std::endl;
-      std::cout << ISD_stats.time_loop_next.total() << std::endl;
-      std::cout << subISD_stats.cnt_candidates.total() << std::endl;
-      double est_running_time = subISD_ptr->get_inverse_proba() * ISD_stats.time_loop_next.total() / double(subISD_stats.cnt_candidates.total());
-      std::cout << "\nEstimated running time : " << est_running_time << "s" << std::endl;
+      double est_nb_iter = std::ceil(subISD_ptr->get_inverse_proba() * double(ISD_stats.cnt_loop_next.total()) / double(subISD_stats.cnt_candidates.total()));
+      double est_running_time = est_nb_iter * ISD_stats.time_loop_next.mean();
+      std::cout << "\nEstimated number of iterations : " << est_nb_iter << std::endl;
+      std::cout << "Estimated running time : " << est_running_time << "s" << std::endl;
     }
 
     /* print detailed statistics */

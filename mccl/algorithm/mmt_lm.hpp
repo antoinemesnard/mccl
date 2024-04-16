@@ -343,51 +343,47 @@ auto it = unpack_indices(packed_indices1.first, idx+0);
         return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
     }
 
-    void optimize_parameters(size_t, unsigned int&, std::function<bool()>) { return; };
-    /* void optimize_parameters(unsigned int& config_l, std::function<bool()> run_test)
+    void optimize_parameters(size_t k, unsigned int& config_l, std::function<bool()> run_test)
     {
-        unsigned int lopt = config_l;
-        unsigned int popt = config.p;
-        unsigned int l2opt = config.l2;
-        unsigned int Aopt = config.A;
-        for (unsigned int ptest = 4; ptest <= 16; ptest += 4)
+        unsigned int lopt = config_l, ltest;
+        unsigned int popt = config.p, ptest;
+        unsigned int l2opt = config.l2, l2test;
+        unsigned int Aopt = config.A, Atest;
+        double power;
+        for (ptest = 4; ptest <= 16; ptest += 4)
         {
-            unsigned int ltest;
-            double power; // power = 2 ** (ltest / 2)
-            if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
+                        if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
             else { ltest = 2; power = 2.0; }
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
             {
                 ltest += 2;
                 power *= 2.0;
             }
-            unsigned int l2test = 1;
-            double power = 2.0;
+            l2test = 1;
+            power = 2.0;
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
             {
                 l2test += 1;
                 power *= 2.0;
             }
+Atest = 1;
             config_l = ltest;
             config.p = ptest;
             config.l2 = l2test;
-            for (unsigned int Atest ...)
-            {
-                config.A = Atest;
-                if (f())
+            config.A = Atest;
+                if (run_test())
                 {
                     lopt = ltest;
                     popt = ptest;
                     l2opt = l2test;
                     Aopt = Atest;
-                }
-            }
+                            }
         }
         config_l = lopt;
         config.p = popt;
         config.l2 = l2opt;
         config.A = Aopt;
-    } */
+    }
 
 private:
     callback_t callback;
