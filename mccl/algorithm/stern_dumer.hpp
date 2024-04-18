@@ -262,7 +262,7 @@ public:
         {
             if (k & 1) { ltest = 7; power = 512.0; }
             else { ltest = 6; power = 256.0; }
-            while (power < detail::binomial<double>((k + ltest + 2) / 2, ptest / 2))
+            while (power <= detail::binomial<double>((k + ltest + 2) / 2, ptest / 2))
             {
                 ltest += 2;
                 power *= 4.0;
