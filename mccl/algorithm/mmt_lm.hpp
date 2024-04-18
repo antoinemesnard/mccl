@@ -365,15 +365,15 @@ public:
         double power;
         for (ptest = 4; ptest <= 16; ptest += 4)
         {
-            if (k & 1) { ltest = 1; power = std::sqrt(2.0); }
-            else { ltest = 2; power = 2.0; }
-            while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
+            if (k & 1) { ltest = 1; power = 2.0 * std::sqrt(2.0); }
+            else { ltest = 2; power = 4.0; }
+            while (power < detail::binomial<double>((k + ltest + 2) / 2, ptest / 4))
             {
                 ltest += 2;
                 power *= 2.0;
             }
             l2test = 1;
-            power = 2.0;
+            power = 4.0;
             while (power < detail::binomial<double>((k + ltest) / 2, ptest / 4))
             {
                 l2test += 1;
