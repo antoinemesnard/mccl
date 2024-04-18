@@ -119,7 +119,7 @@ public:
         hashmap12.clear();
         hashmap.clear();
         hashmap12.reserve(size_t(L1));
-        hashmap.reserve(size_t (std::min<double>(L2, L3)));
+        hashmap.reserve(size_t (std::min<double>(L2, L3)), 1.0f);
 
         stats.time_initialize.stop();
     }

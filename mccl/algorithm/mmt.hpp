@@ -119,9 +119,9 @@ public:
         hashmap1.clear();
         hashmap2.clear();
         hashmap.clear();
-        hashmap1.reserve(size_t(std::min<double>(L1, L2)));
-        hashmap2.reserve(size_t(std::min<double>(L1, L2)));
-        hashmap.reserve(size_t(std::min<double>(L2, L3)));
+        hashmap1.reserve(size_t(std::min<double>(L1, L2)), 1.0f);
+        hashmap2.reserve(size_t(std::min<double>(L1, L2)), 1.0f);
+        hashmap.reserve(size_t(std::min<double>(L2, L3)), 1.0f);
 
         stats.time_initialize.stop();
     }
