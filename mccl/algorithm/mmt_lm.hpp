@@ -255,11 +255,39 @@ public:
                 if (bitfield.stage3(val1>>l2))
                 {
                     pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                    hashmap.queue_match(val1, packed_indices1, process_candidate);
+                    hashmap.queue_match(val1, packed_indices1, 
+                        [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
+                        {
+                            stats.cnt_candidates.inc();
+
+                            auto it = unpack_indices2(packed_indices1.first, packed_indices2.first, idx+0);
+                            auto it2 = unpack_indices2(packed_indices1.second, packed_indices2.second, it);
+
+                            unsigned int w = hammingweight((val1 ^ val2) & padmask);
+
+                            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
+                            if (!(*callback)(ptr, idx+0, it2, w))
+                                state = false;
+                            return state;
+                        });
                 }
                 return state;
             });
-        hashmap.finalize_match(process_candidate);
+        hashmap.finalize_match(
+            [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
+            {
+                stats.cnt_candidates.inc();
+
+                auto it = unpack_indices2(packed_indices1.first, packed_indices2.first, idx+0);
+                auto it2 = unpack_indices2(packed_indices1.second, packed_indices2.second, it);
+
+                unsigned int w = hammingweight((val1 ^ val2) & padmask);
+
+                MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
+                if (!(*callback)(ptr, idx+0, it2, w))
+                    state = false;
+                return state;
+            });
         stats.time_other_4.stop();
 
         ++a;
@@ -268,59 +296,7 @@ public:
         return state;
     }
 
-    std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
-        [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
-        {
-            if ((packed_indices1.first == packed_indices2.first) || (packed_indices1.second == packed_indices2.second))
-                return true;
-
-            auto it = unpack_indices(packed_indices1.first, idx+0);
-            auto it2 = unpack_indices(packed_indices1.second, it);
-            auto it3 = unpack_indices(packed_indices2.first, it2);
-            auto it4 = unpack_indices(packed_indices2.second, it3);
-
-            auto it5 = it4;
-            auto ita = it - 1, itb = it2;
-            while (ita >= idx+0 && itb < it3)
-            {   if (*ita == *itb)
-                { --ita; ++itb; }
-                else
-                {   if (*ita > *itb)
-                    { *it5 = *ita; --ita; }
-                    else
-                    { *it5 = *itb; ++itb; }
-                    ++it5; } }
-            while (ita >= idx+0)
-            { *it5 = *ita; --ita; ++it5; }
-            while (itb < it3)
-            { *it5 = *itb; ++itb; ++it5; }
-            ita = it; itb = it3;
-            while (ita < it2 && itb < it4)
-            {   if (*ita == *itb)
-                { ++ita; ++itb; }
-                else
-                {   if (*ita > *itb)
-                    { *it5 = *ita; ++ita; }
-                    else
-                    { *it5 = *itb; ++itb; }
-                    ++it5; } }
-            while (ita < it2)
-            { *it5 = *ita; ++ita; ++it5; }
-            while (itb < it4)
-            { *it5 = *itb; ++itb; ++it5; }
-
-            if (size_t(it5 - it4) == p)
-                stats.cnt_candidates.inc();
-
-            unsigned int w = hammingweight((val1 ^ val2) & padmask);
-
-            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-            if (!(*callback)(ptr, it4, it5, w))
-                state = false;
-            return state;
-        };
-
-    static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
+        static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
     {
         uint64_t x = ~uint64_t(0);
         for (; begin != end; ++begin)
@@ -342,6 +318,46 @@ public:
             ++first;
             x >>= 16;
         }
+        return first;
+    }
+
+    uint32_t* unpack_indices2(uint64_t x1, uint64_t x2, uint32_t* first)
+    {
+        size_t i = 0, j = 0;
+        while ((i < 4) && (j < 4))
+        {   uint32_t y1 = uint32_t(x1 & 0xFFFF);
+            uint32_t y2 = uint32_t(x2 & 0xFFFF);
+            if ((y1 == 0xFFFF) || (y2 == 0xFFFF))
+                break;
+            if (y1 == y2)
+            {   x1 >>= 16;
+                x2 >>= 16;
+                ++i;
+                ++j;
+                continue; }
+            if ((y1 > y2))
+            {   *first = y1;
+                x1 >>= 16;
+                ++i; }
+            else
+            {   *first = y2;
+                x2 >>= 16;
+                ++j; }
+            ++first; }
+        for (; i < 4; ++i)
+        {   uint32_t y1 = uint32_t(x1 & 0xFFFF);
+            if (y1 == 0xFFFF)
+                break;
+            *first = y1;
+            ++first;
+            x1 >>= 16; }
+        for (; j < 4; ++j)
+        {   uint32_t y2 = uint32_t(x2 & 0xFFFF);
+            if (y2 == 0xFFFF)
+                break;
+            *first = y2;
+            ++first;
+            x2 >>= 16; }
         return first;
     }
 
@@ -412,7 +428,7 @@ private:
     batch_unordered_multimap<uint64_t, pair_uint64_t, pair_uint64_t, true> hashmap;
 
     enumerate_t<uint32_t> enumerate;
-    uint32_t idx[32];
+    uint32_t idx[16];
 
     std::vector<uint64_t> firstwords;
     uint64_t firstwordmask, padmask, syndmask, Sval;
