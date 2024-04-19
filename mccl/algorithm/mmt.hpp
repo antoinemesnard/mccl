@@ -287,25 +287,17 @@ public:
                 if (bitfield.stage3(val1>>l2))
                 {
                     pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                    hashmap.queue_match(val1, packed_indices1,
-                        [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
-                        {
-                            stats.cnt_candidates.inc();
-
-                            auto it = unpack_indices2(packed_indices1.first, packed_indices2.first, idx+0);
-                            auto it2 = unpack_indices2(packed_indices1.second, packed_indices2.second, it);
-
-                            unsigned int w = hammingweight((val1 ^ val2) & padmask);
-
-                            MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
-                            if (!(*callback)(ptr, idx+0, it2, w))
-                                state = false;
-                            return state;
-                        });
+                    hashmap.queue_match(val1, packed_indices1, process_candidate);
                 }
                 return state;
             });
-        hashmap.finalize_match(
+        hashmap.finalize_match(process_candidate);
+        stats.time_other_5.stop();
+        stats.time_loop_next.stop();
+        return false;
+    }
+
+    std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
             [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
             {
                 stats.cnt_candidates.inc();
@@ -319,11 +311,8 @@ public:
                 if (!(*callback)(ptr, idx+0, it2, w))
                     state = false;
                 return state;
-            });
-        stats.time_other_5.stop();
-        stats.time_loop_next.stop();
-        return false;
-    }
+            };
+
 
     static uint64_t pack_indices(const uint32_t* begin, const uint32_t* end)
     {
