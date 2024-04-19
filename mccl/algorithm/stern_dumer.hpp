@@ -166,6 +166,7 @@ public:
         enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p1,
             [this](uint64_t val)
             { 
+                stats.cnt_L11.inc();
                 bitfield.stage1(val); 
             });
         stats.time_other_1.stop();
@@ -175,6 +176,7 @@ public:
         enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows2, p2,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val)
             {
+                stats.cnt_L12.inc();
                 val ^= Sval;
                 if (bitfield.stage2(val))
                     hashmap.insert(val, pack_indices(idxbegin,idxend) );
@@ -206,11 +208,12 @@ public:
     std::function<bool(const uint64_t, const uint64_t, const uint64_t, const uint64_t)> process_candidate =
         [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
         {
+            stats.cnt_L0.inc();
+            
             auto it = unpack_indices(packed_indices1, idx+0);
             auto it2 = unpack_indices(packed_indices2, it);
             unsigned int w = hammingweight((val1 ^ val2) & padmask);
 
-            stats.cnt_candidates.inc();
             MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
             if (!(*callback)(ptr, idx+0, it2, w))
                 state = false;

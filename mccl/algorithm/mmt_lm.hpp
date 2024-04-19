@@ -271,7 +271,7 @@ public:
     std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
         [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
         {
-            stats.cnt_candidates.inc();
+            stats.cnt_L0.inc();
 
             auto it = unpack_indices2(packed_indices1.first, packed_indices2.first, idx+0);
             auto it2 = unpack_indices2(packed_indices1.second, packed_indices2.second, it);

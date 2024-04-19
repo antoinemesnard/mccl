@@ -57,7 +57,7 @@ public:
     {
         stats.cnt_loop_next.inc();
         stats.time_loop_next.start();
-        stats.cnt_candidates.inc();  
+        stats.cnt_L0.inc();  
         (*callback)(ptr, nullptr, nullptr, 0);
         stats.time_loop_next.stop();
         return false;

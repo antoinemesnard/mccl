@@ -195,7 +195,11 @@ public:
   counter_statistic cnt_loop_next;
   counter_statistic cnt_solve;
   counter_statistic cnt_check_solution;
-  counter_statistic cnt_candidates;
+  counter_statistic cnt_L0;
+  counter_statistic cnt_L11;
+  counter_statistic cnt_L12;
+  counter_statistic cnt_L21;
+  counter_statistic cnt_L22;
   // time
   time_statistic time_initialize;
   time_statistic time_callback;
@@ -219,7 +223,11 @@ public:
     cnt_loop_next.refresh();
     cnt_solve.refresh();
     cnt_check_solution.refresh();
-    cnt_candidates.refresh();
+    cnt_L0.refresh();
+    cnt_L11.refresh();
+    cnt_L12.refresh();
+    cnt_L21.refresh();
+    cnt_L22.refresh();
   }
 
   // print
@@ -237,6 +245,16 @@ public:
     cnt_loop_next.print("Loop next", o);
     cnt_solve.print("Solve", o);
     cnt_check_solution.print("Check solution", o);
+    if (cnt_L0.total() != 0)
+      cnt_L0.print("L0", o);
+    if (cnt_L11.total() != 0)
+      cnt_L11.print("L11", o);
+    if (cnt_L12.total() != 0)
+      cnt_L12.print("L12", o);
+    if (cnt_L21.total() != 0)
+      cnt_L21.print("L21", o);
+    if (cnt_L22.total() != 0)
+      cnt_L22.print("L22", o);
     o << "Time: " << std::endl;
     o << std::setw(15+17) << "total time," << std::setw(16) << "mean time," << std::setw(16) << "median time," << std::endl;
     time_initialize.print("Initialize", o);
@@ -271,7 +289,11 @@ public:
     cnt_loop_next.clear();
     cnt_solve.clear();
     cnt_check_solution.clear();
-    cnt_candidates.clear();
+    cnt_L0.clear();
+    cnt_L11.clear();
+    cnt_L12.clear();
+    cnt_L21.clear();
+    cnt_L22.clear();
     time_initialize.clear();
     time_callback.clear();
     time_prepare_loop.clear();

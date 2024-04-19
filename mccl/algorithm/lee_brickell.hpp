@@ -139,6 +139,7 @@ public:
             enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows, p, 
                 [this](uint32_t* begin, uint32_t* end, uint64_t)
                 {
+                    stats.cnt_L0.inc();
                     MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
                     return (*callback)(ptr, begin, end, 0);
                 });
@@ -150,6 +151,7 @@ public:
                 {
                     if ((val & firstwordmask) == (Sval & firstwordmask))
                     {
+                        stats.cnt_L0.inc();
                         unsigned int w = hammingweight((val ^ Sval) & padmask);
                         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
                         return (*callback)(ptr, begin, end, w);
