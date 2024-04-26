@@ -208,12 +208,10 @@ public:
     inline bool callback(const uint32_t* begin, const uint32_t* end, unsigned int w1partial)
     {
             stats.cnt_callback.inc();
-            stats.time_callback.start();
-            // weight of solution consists of w2 (=end-begin) + w1partial (given) + w1rest (computed below)
+                        // weight of solution consists of w2 (=end-begin) + w1partial (given) + w1rest (computed below)
             size_t wsol = w1partial + (end - begin);
-            if (wsol > w) {
-                stats.time_callback.stop();
-                return true; }
+            if (wsol > w)
+                return true;
 
             wsol = end - begin;
             if (begin == end)
@@ -224,9 +222,8 @@ public:
                 for (unsigned i = 0; i < blocks_per_row; ++i,++Sptr,++Cptr)
                 {
                     wsol += hammingweight( *Cptr = *Sptr );
-                    if (wsol > w) {
-                        stats.time_callback.stop();
-                        return true; }
+                    if (wsol > w)
+                        return true;
                 }
             } else if (begin == end-1)
             {
@@ -237,9 +234,8 @@ public:
                 for (unsigned i = 0; i < blocks_per_row; ++i,++Cptr,++Sptr,++HTrowptr)
                 {
                     wsol += hammingweight( *Cptr = *Sptr ^ *HTrowptr );
-                    if (wsol > w) {
-                        stats.time_callback.stop();
-                        return true; }
+                    if (wsol > w)
+                        return true;
                 }
             } else {
                 // case selection size >= 2
@@ -254,16 +250,14 @@ public:
                         *Cptr = *Cptr ^ *(H12T_blockptr + block_stride*(*p) + i);
                     }
                     wsol += hammingweight( *Cptr = *Cptr ^ *(H12T_blockptr + block_stride*(*p) + i) );
-                    if (wsol > w) {
-                        stats.time_callback.stop();
-                        return true; }
+                    if (wsol > w)
+                        return true;
                 }
             }
 
             // this should be a correct solution at this point
-            if (benchmark) {
-                stats.time_callback.stop();
-                return true; }
+            if (benchmark)
+                return true;
 
             // 3. construct full solution on echelon and ISD part
             if (wsol != (end-begin) + hammingweight(C))
@@ -284,8 +278,7 @@ public:
                 solution.setbit(sol[i]);
             if (config.verify_solution && !check_solution())
                 throw std::runtime_error("ISD_generic::callback: internal error 3: solution is incorrect!");
-            stats.time_callback.stop();
-            return false;
+                        return false;
     }
     
     
