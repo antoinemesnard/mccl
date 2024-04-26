@@ -115,9 +115,9 @@ public:
 
         // compute a reasonable reserve size
         double L1 = detail::binomial<double>(rows2, p2);
-        double L2 = L1 * L1 / pow(2.0, double(columns));
+        // double L2 = L1 * L1 / pow(2.0, double(columns));
         hashmap.clear();
-        hashmap.reserve(size_t(std::min<double>(L1, L2)), 1.0f);
+        hashmap.reserve(size_t(L1));
 
         stats.time_initialize.stop();
     }
