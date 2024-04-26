@@ -106,7 +106,6 @@ public:
 
         bitfield1.resize(l2);
         bitfield2.resize(l2);
-        bitfield.resize(l1);
 
         hashmap1.define_keymask(syndmask);
         hashmap2.define_keymask(syndmask);
@@ -115,13 +114,13 @@ public:
         // compute reasonable reserve sizes
         double L1 = detail::binomial<double>(rows2, p12);
         double L2 = L1 * L1 / pow(2.0, double(l2));
-        double L3 = L2 * L2 / pow(2.0, double(l1));
+        // double L3 = L2 * L2 / pow(2.0, double(l1));
         hashmap1.clear();
         hashmap2.clear();
         hashmap.clear();
-        hashmap1.reserve(size_t(std::min<double>(L1, L2)), 1.0f);
-        hashmap2.reserve(size_t(std::min<double>(L1, L2)), 1.0f);
-        hashmap.reserve(size_t(std::min<double>(L2, L3)), 1.0f);
+        hashmap1.reserve(size_t(L1));
+        hashmap2.reserve(size_t(L2));
+        hashmap.reserve(size_t(L2));
 
         stats.time_initialize.stop();
     }
@@ -152,7 +151,6 @@ public:
 
         bitfield1.clear();
         bitfield2.clear();
-        bitfield.clear();
         
         hashmap1.clear();
         hashmap2.clear();
@@ -201,29 +199,7 @@ public:
         hashmap2.finalize_insert();
         stats.time_other_2.stop();
         
-        stats.time_other_3.start();
-        enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
-            [this](uint64_t val1)
-            {
-                if (bitfield1.stage3(val1))
-                {
-                    hashmap1.queue_match(val1, 0,
-                        [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
-                        {
-                            stats.cnt_L11.inc();
-                            bitfield.stage1((val1 ^ val2)>>l2);
-                        });
-                }
-            });
-        hashmap1.finalize_match(
-            [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
-            {
-                stats.cnt_L11.inc();
-                bitfield.stage1((val1 ^ val2)>>l2);
-            });
-        stats.time_other_3.stop();
-        
-        stats.time_other_4.start(),
+        stats.time_other_3.start(),
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
@@ -239,11 +215,8 @@ public:
                         {
                             stats.cnt_L12.inc();
                             uint64_t val = val1 ^ val2;
-                            if (bitfield.stage2(val>>l2))
-                            {
-                                pair_uint64_t packed_indices = {packed_indices1, packed_indices2};
-                                hashmap.insert(val, packed_indices);
-                            }
+                            pair_uint64_t packed_indices = {packed_indices1, packed_indices2};
+                            hashmap.insert(val, packed_indices);
                         });
                 }
             });
@@ -252,16 +225,13 @@ public:
             {
                 stats.cnt_L12.inc();
                 uint64_t val = val1 ^ val2;
-                if (bitfield.stage2(val>>l2))
-                {
-                    pair_uint64_t packed_indices = {packed_indices1, packed_indices2};
-                    hashmap.insert(val, packed_indices);
-                }
+                pair_uint64_t packed_indices = {packed_indices1, packed_indices2};
+                hashmap.insert(val, packed_indices);
             });
         hashmap.finalize_insert();
-        stats.time_other_4.stop();
+        stats.time_other_3.stop();
         
-        stats.time_other_5.start();
+        stats.time_other_4.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val11)
             {
@@ -274,12 +244,10 @@ public:
                     hashmap1.queue_match(val11, packed_indices11,
                         [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
                         {
+                            stats.cnt_L11.inc();
                             uint64_t val1 = val11 ^ val12;
-                            if (bitfield.stage3(val1>>l2))
-                            {
-                                pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                                hashmap.queue_match(val1, packed_indices1, process_candidate);
-                            }
+                            pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                            hashmap.queue_match(val1, packed_indices1, process_candidate);
                             return state;
                         });
                 }
@@ -288,16 +256,14 @@ public:
         hashmap1.finalize_match(
             [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
             {
+                stats.cnt_L11.inc();
                 uint64_t val1 = val11 ^ val12;
-                if (bitfield.stage3(val1>>l2))
-                {
-                    pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                    hashmap.queue_match(val1, packed_indices1, process_candidate);
-                }
+                pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                hashmap.queue_match(val1, packed_indices1, process_candidate);
                 return state;
             });
         hashmap.finalize_match(process_candidate);
-        stats.time_other_5.stop();
+        stats.time_other_4.stop();
         stats.time_loop_next.stop();
         return false;
     }
@@ -417,7 +383,6 @@ private:
 
     staged_bitfield<false,false> bitfield1;
     staged_bitfield<false,false> bitfield2;
-    staged_bitfield<false,false> bitfield;
 
     batch_unordered_multimap<uint64_t, uint64_t, uint64_t, true> hashmap1;
     batch_unordered_multimap<uint64_t, uint64_t, uint64_t, true> hashmap2;

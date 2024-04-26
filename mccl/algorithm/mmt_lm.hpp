@@ -107,19 +107,17 @@ public:
         padmask = ~firstwordmask;
         syndmask = detail::lastwordmask(l2);
 
-        bitfield.resize(l1);
-
         hashmap12.define_keymask(syndmask);
         hashmap.define_keymask(firstwordmask);
 
         // compute reasonable reserve sizes
         double L1 = detail::binomial<double>(rows2, p12);
         double L2 = L1 * L1 / pow(2.0, double(l2));
-        double L3 = L2 * L2 / pow(2.0, double(l1));
+        // double L3 = L2 * L2 / pow(2.0, double(l1));
         hashmap12.clear();
         hashmap.clear();
         hashmap12.reserve(size_t(L1));
-        hashmap.reserve(size_t (std::min<double>(L2, L3)), 1.0f);
+        hashmap.reserve(size_t (L2));
 
         stats.time_initialize.stop();
     }
@@ -174,27 +172,9 @@ public:
         stats.time_loop_next.start();
         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_loopnext);
 
-        bitfield.clear();
         hashmap.clear();
-
-        stats.time_other_2.start();
-        enumerate.enumerate_val(firstwords.data()+rows2, firstwords.data()+rows, p11,
-            [this](uint64_t val1)
-            {
-                hashmap12.queue_match(val1 ^ a, 0,
-                     [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
-                     {
-                        bitfield.stage1((val1 ^ val2)>>l2);
-                     });
-            });
-        hashmap12.finalize_match(
-            [this](const uint64_t val1, const uint64_t, const uint64_t val2, const uint64_t)
-            {
-                bitfield.stage1((val1 ^ val2)>>l2);
-            });
-        stats.time_other_2.stop();
         
-        stats.time_other_3.start();
+        stats.time_other_2.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val1)
             {
@@ -207,27 +187,21 @@ public:
                     [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
                     {
                         uint64_t val = val1 ^ val2;
-                        if (bitfield.stage2(val>>l2))
-                        {
-                            pair_uint64_t packed_indices = { packed_indices1, packed_indices2 };
-                            hashmap.insert(val, packed_indices);
-                        }
+                        pair_uint64_t packed_indices = { packed_indices1, packed_indices2 };
+                        hashmap.insert(val, packed_indices);
                     });
             });
         hashmap12.finalize_match(
             [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
             {
                 uint64_t val = val1 ^ val2;
-                if (bitfield.stage2(val>>l2))
-                {
-                    pair_uint64_t packed_indices = { packed_indices1, packed_indices2 };
-                    hashmap.insert(val, packed_indices);
-                }
+                pair_uint64_t packed_indices = { packed_indices1, packed_indices2 };
+                hashmap.insert(val, packed_indices);
             });
         hashmap.finalize_insert();
-        stats.time_other_3.stop();
+        stats.time_other_2.stop();
         
-        stats.time_other_4.start();
+        stats.time_other_3.start();
         enumerate.enumerate(firstwords.data()+rows2, firstwords.data()+rows, p11,
             [this](const uint32_t* idxbegin, const uint32_t* idxend, uint64_t val11)
             {
@@ -239,11 +213,8 @@ public:
                     [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
                     {
                         uint64_t val1 = val11 ^ val12;
-                        if (bitfield.stage3(val1>>l2))
-                        {
-                            pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                            hashmap.queue_match(val1, packed_indices1, process_candidate);
-                        }
+                        pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                        hashmap.queue_match(val1, packed_indices1, process_candidate);
                         return state;
                     });
             return state;
@@ -252,15 +223,12 @@ public:
             [this](const uint64_t val11, const uint64_t packed_indices11, const uint64_t val12, const uint64_t packed_indices12)
             {
                 uint64_t val1 = val11 ^ val12;
-                if (bitfield.stage3(val1>>l2))
-                {
-                    pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
-                    hashmap.queue_match(val1, packed_indices1, process_candidate);
-                }
+                pair_uint64_t packed_indices1 = { packed_indices11, packed_indices12 };
+                hashmap.queue_match(val1, packed_indices1, process_candidate);
                 return state;
             });
         hashmap.finalize_match(process_candidate);
-        stats.time_other_4.stop();
+        stats.time_other_3.stop();
 
         ++a;
         state = state && (a < A);
@@ -419,8 +387,6 @@ private:
     cvec_view S;
     size_t columns, words;
     unsigned int wmax;
-
-    staged_bitfield<false,false> bitfield;
 
     batch_unordered_multimap<uint64_t, uint64_t, uint64_t, true> hashmap12;
     batch_unordered_multimap<uint64_t, pair_uint64_t, pair_uint64_t, true> hashmap;
