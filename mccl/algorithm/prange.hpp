@@ -57,7 +57,6 @@ public:
     {
         stats.cnt_loop_next.inc();
         stats.time_loop_next.start();
-        stats.cnt_L0.inc();  
         (*callback)(ptr, nullptr, nullptr, 0);
         stats.time_loop_next.stop();
         return false;
@@ -75,7 +74,7 @@ public:
     decoding_statistics get_stats() const { return stats; };
     void reset_stats() { stats.reset(); };
 
-    double get_inverse_proba() const
+    double get_inverse_proba()
     {
         size_t k = H12T.rows();
         size_t n = H12T.columns() + k;

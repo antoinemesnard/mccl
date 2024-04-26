@@ -153,7 +153,7 @@ public:
 
     virtual void reset_stats() = 0;
 
-    virtual double get_inverse_proba() const = 0;
+    virtual double get_inverse_proba() = 0;
 
     virtual void optimize_parameters(size_t k, unsigned int& l, std::function<bool()> run_test) = 0;
 };

@@ -208,7 +208,7 @@ public:
     std::function<bool(const uint64_t, const uint64_t, const uint64_t, const uint64_t)> process_candidate =
         [this](const uint64_t val1, const uint64_t packed_indices1, const uint64_t val2, const uint64_t packed_indices2)
         {
-            stats.cnt_L0.inc();
+            stats.cnt_L0_0.inc();
             
             auto it = unpack_indices(packed_indices1, idx+0);
             auto it2 = unpack_indices(packed_indices2, it);
@@ -249,11 +249,11 @@ public:
 
     void reset_stats() { stats.reset(); };
 
-    double get_inverse_proba() const
+    double get_inverse_proba()
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
-        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)) * double(stats.cnt_L0_0.mean()));
     }
 
     void optimize_parameters(size_t k, unsigned int& config_l, std::function<bool()> run_test)

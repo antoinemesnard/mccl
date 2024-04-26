@@ -271,10 +271,16 @@ public:
     std::function<bool(const uint64_t, const pair_uint64_t, const uint64_t, const pair_uint64_t)> process_candidate =
         [this](const uint64_t val1, const pair_uint64_t packed_indices1, const uint64_t val2, const pair_uint64_t packed_indices2)
         {
-            stats.cnt_L0.inc();
-
             auto it = unpack_indices2(packed_indices1.first, packed_indices2.first, idx+0);
             auto it2 = unpack_indices2(packed_indices1.second, packed_indices2.second, it);
+
+            size_t p0 = it2 - idx;
+            if (p0 == p)
+                stats.cnt_L0_0.inc();
+            else if (p0 == p - 2)
+                stats.cnt_L0_1.inc();
+            else
+                stats.cnt_L0_2.inc();
 
             unsigned int w = hammingweight((val1 ^ val2) & padmask);
 
@@ -353,11 +359,15 @@ public:
 
     void reset_stats() { stats.reset(); };
 
-    double get_inverse_proba() const
+    double get_inverse_proba()
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
-        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+        double sum = 0;
+        sum += detail::binomial<double>(n - k - columns, wmax - p) * stats.cnt_L0_0.mean();
+        sum += detail::binomial<double>(n - k - columns, wmax - p + 2) * stats.cnt_L0_1.mean();
+        sum += detail::binomial<double>(n - k - columns, wmax - p + 4) * stats.cnt_L0_2.mean();
+        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (std::pow(2.0, double(columns)) * sum);
     }
 
     void optimize_parameters(size_t k, unsigned int& config_l, std::function<bool()> run_test)

@@ -139,7 +139,7 @@ public:
             enumerate.enumerate(firstwords.data()+0, firstwords.data()+rows, p, 
                 [this](uint32_t* begin, uint32_t* end, uint64_t)
                 {
-                    stats.cnt_L0.inc();
+                    stats.cnt_L0_0.inc();
                     MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
                     return (*callback)(ptr, begin, end, 0);
                 });
@@ -151,7 +151,7 @@ public:
                 {
                     if ((val & firstwordmask) == (Sval & firstwordmask))
                     {
-                        stats.cnt_L0.inc();
+                        stats.cnt_L0_0.inc();
                         unsigned int w = hammingweight((val ^ Sval) & padmask);
                         MCCL_CPUCYCLE_STATISTIC_BLOCK(cpu_callback);
                         return (*callback)(ptr, begin, end, w);
@@ -167,11 +167,11 @@ public:
 
     void reset_stats() { stats.reset(); };
 
-    double get_inverse_proba() const
+    double get_inverse_proba()
     {
         size_t k = rows - columns;
         size_t n = H12T.columns() + k;
-        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)));
+        return std::min<double>(std::pow(2.0, double(n - k)), detail::binomial<double>(n, wmax)) / (detail::binomial<double>(n - k - columns, wmax - p) * std::pow(2.0, double(columns)) * double(stats.cnt_L0_0.mean()));
     }
 
     void optimize_parameters(size_t, unsigned int&, std::function<bool()>) { return; }; // TODO

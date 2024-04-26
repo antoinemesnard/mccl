@@ -357,7 +357,7 @@ try
           auto ISD_stats = ISD_ptr->get_stats();
           auto subISD_stats = subISD_ptr->get_stats();
           ISD_stats.refresh();
-          est_time = std::ceil(subISD_ptr->get_inverse_proba() * double(ISD_stats.cnt_loop_next.total()) / double(subISD_stats.cnt_L0.total())) * ISD_stats.time_loop_next.mean();
+          est_time = std::ceil(subISD_ptr->get_inverse_proba()) * ISD_stats.time_loop_next.mean();
           ISD_ptr->reset_stats();
           subISD_ptr->reset_stats();
           if (est_time < min_est_time)
@@ -405,7 +405,7 @@ try
     if (benchmark)
     {
       ISD_stats.refresh();
-      double est_nb_iter = std::ceil(subISD_ptr->get_inverse_proba() * double(ISD_stats.cnt_loop_next.total()) / double(subISD_stats.cnt_L0.total()));
+      double est_nb_iter = std::ceil(subISD_ptr->get_inverse_proba());
       double est_running_time = est_nb_iter * ISD_stats.time_loop_next.mean();
       std::cout << "\nEstimated number of iterations : " << est_nb_iter << std::endl;
       std::cout << "Estimated running time : " << est_running_time << "s" << std::endl;
