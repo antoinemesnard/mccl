@@ -119,7 +119,7 @@ public:
         hashmap2.clear();
         hashmap.clear();
         hashmap1.reserve(size_t(L1));
-        hashmap2.reserve(size_t(L2));
+        hashmap2.reserve(size_t(L1));
         hashmap.reserve(size_t(L2));
 
         stats.time_initialize.stop();
